@@ -2,4 +2,3 @@ streamlit
 bcrypt
 streamlit-extras
 mariadb
-hashlib
