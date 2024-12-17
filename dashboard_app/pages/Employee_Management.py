@@ -2,7 +2,8 @@
 import hashlib
 import streamlit as st
 import pandas as pd
-from utils.MagDBcontroller import connessione, selectSQL, add_record, updateSQL, deleteSQL
+from utils.MagDBcontroller import connessione, select_recordsSQL
+from streamlit_extras.switch_page_button import switch_page
 
 # Funzione per creare un ID dipendente univoco
 def create_employee_id(codicefiscale, nome, cognome, ruolo, dataassunzione):
@@ -17,34 +18,35 @@ def create_employee_id(codicefiscale, nome, cognome, ruolo, dataassunzione):
 # Verifica autenticazione
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
     st.error("Accesso non autorizzato. Effettua il login prima.")
+    switch_page("Login")
     st.stop()
 
-# Funzione per recuperare la lista dei dipendenti dal database
-def fetch_employees():
-    with connessione() as conn:
-        query = """
-        SELECT ID_Dipendente, CodiceFiscale, Nome, Cognome, Ruolo, DataAssunzione
-        FROM Dipendenti
-        ORDER BY DataAssunzione DESC
-        """
-        return pd.read_sql(query, conn)
+
 
 # Funzione per verificare se un dipendente con lo stesso codice fiscale esiste già
 def check_duplicate(codicefiscale):
-    with connessione() as conn:
+    try:
+        # Verifica la duplicazione del codice fiscale
         query = "SELECT COUNT(*) FROM Dipendenti WHERE CodiceFiscale = %s"
-        result = selectSQL(conn, query, (codicefiscale,))
+        result = select_recordsSQL(connessione(), "Dipendenti", query, (codicefiscale,))
         return result[0][0] > 0
+    except Exception as e:
+        st.error(f"Errore durante il controllo duplicati: {e}")
+        return False
 
-# Funzione per recuperare i dettagli di un dipendente
-def fetch_employee_details(employee_id):
-    with connessione() as conn:
+# Funzione per aggiungere un nuovo dipendente
+def add_employee(employee_id, codicefiscale, nome, cognome, ruolo, dataassunzione):
+    try:
+        # Inserisce il nuovo dipendente nel database
         query = """
-        SELECT ID_Dipendente, CodiceFiscale, Nome, Cognome, Ruolo, DataAssunzione
-        FROM Dipendenti
-        WHERE ID_Dipendente = %s
+        INSERT INTO Dipendenti (ID_Dipendente, CodiceFiscale, Nome, Cognome, Ruolo, DataAssunzione)
+        VALUES (%s, %s, %s, %s, %s, %s)
         """
-        return pd.read_sql(query, conn, params=(employee_id,))
+        data = (employee_id, codicefiscale, nome, cognome, ruolo, dataassunzione)
+        with connessione() as conn:
+            conn.execute(query, data)
+    except Exception as e:
+        st.error(f"Errore durante l'aggiunta del dipendente: {e}")
 
 # Titolo della pagina
 st.title("Gestione Dipendenti")
@@ -61,13 +63,12 @@ if st.sidebar.button("Log Out"):
 
 # Sezione per visualizzare i dipendenti
 st.write("### Elenco dei Dipendenti Attuali")
-try:
-    employees = fetch_employees()
-    for index, row in employees.iterrows():
-        employee_link = f"[{row['Nome']} {row['Cognome']}]({row['ID_Dipendente']})"
-        st.write(f"- {employee_link} (Ruolo: {row['Ruolo']}, Data Assunzione: {row['DataAssunzione']})")
-except Exception as e:
-    st.error(f"Errore durante il caricamento dei dipendenti: {e}")
+employees = select_recordsSQL(connessione(), "Dipendenti")
+if employees:
+    df_employees = pd.DataFrame(employees)
+    st.dataframe(df_employees)
+else:
+    st.write("Nessun dipendente trovato.")
 
 # Sezione per aggiungere un nuovo dipendente
 st.write("### Aggiungi Nuovo Dipendente")
@@ -90,19 +91,9 @@ with st.form(key='employee_form'):
                 # Genera l'ID dipendente
                 employee_id = create_employee_id(codicefiscale, nome, cognome, ruolo, str(dataassunzione))
                 
-                # Inserisci il nuovo dipendente nel database
-                try:
-                    with connessione() as conn:
-                        query = """
-                        INSERT INTO Dipendenti (ID_Dipendente, CodiceFiscale, Nome, Cognome, Ruolo, DataAssunzione)
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                        """
-                        data = (employee_id, codicefiscale, nome, cognome, ruolo, dataassunzione)
-                        add_record(conn, query, data)
-                    st.success("Dipendente aggiunto con successo!")
-                    st.experimental_rerun()  # Ricarica la pagina per visualizzare l'aggiornamento
-                except Exception as e:
-                    st.error(f"Errore durante l'aggiunta del dipendente: {e}")
+                # Aggiungi il nuovo dipendente nel database
+                add_employee(employee_id, codicefiscale, nome, cognome, ruolo, dataassunzione)
+                st.success("Dipendente aggiunto con successo!")
+                st.rerun()  # Ricarica la pagina per visualizzare l'aggiornamento
         else:
             st.error("Tutti i campi sono obbligatori.")
-
