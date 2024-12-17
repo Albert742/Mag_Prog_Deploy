@@ -820,6 +820,46 @@ def delete_recordSQL(session, nome_tabella, condizione):
         print(f"Errore durante l'eliminazione dalla tabella {nome_tabella}: {e}")
         return False
 
+"""
+def select_recordsSQL(session, nome_tabella, colonne="*", condizione=None, args=None, ordina_per=None, limite=None):
+"""
+"""
+    Seleziona i record da una tabella in base a condizioni, ordinamento e limite opzionali.
+
+    Args:
+        session: L'oggetto sessione SQLAlchemy.
+        nome_tabella (str): Il nome della tabella da cui selezionare.
+        colonne (str, optional): Lista di colonne separate da virgola da selezionare. Default a * per selezionare tutte le colonne.
+        condizione (str, optional): La clausola SQL WHERE (es., "ID > :id"). Default a None.
+        args (dict, optional) : Dizionario di parametri
+        ordina_per (str, optional): La clausola SQL ORDER BY (es., "Nome ASC"). Default a None.
+        limite (int, optional): La clausola SQL LIMIT. Default a None.
+
+    Returns:
+        list: Una lista di dizionari, dove ogni dizionario rappresenta un record.
+        Restituisce False in caso di errore.
+"""
+"""
+    try:
+        sql = f"SELECT {colonne} FROM `{nome_tabella}`"
+        if condizione:
+           sql += f" WHERE {condizione}"
+        if ordina_per:
+           sql += f" ORDER BY {ordina_per}"
+        if limite:
+            sql += f" LIMIT {limite}"
+
+
+        result = session.execute(text(sql), args or {})
+        if colonne == "*":
+          records = [dict(row) for row in result]  # Trasforma ogni riga in un dizionario se si selezionano tutte le colonne
+        else:
+           records = [dict(zip(result.keys(), row)) for row in result] # Trasforma ogni riga in un dizionario usando le chiavi e i valori quando si seleziona una sola colonna
+        return records
+    except Exception as e:
+        print(f"Errore durante la selezione dei record dalla tabella {nome_tabella}: {e}")
+        return False
+"""
 def select_recordsSQL(session, nome_tabella, colonne="*", condizione=None, args=None, ordina_per=None, limite=None):
     """
     Seleziona i record da una tabella in base a condizioni, ordinamento e limite opzionali.
@@ -840,22 +880,27 @@ def select_recordsSQL(session, nome_tabella, colonne="*", condizione=None, args=
     try:
         sql = f"SELECT {colonne} FROM `{nome_tabella}`"
         if condizione:
-           sql += f" WHERE {condizione}"
+            sql += f" WHERE {condizione}"
         if ordina_per:
-           sql += f" ORDER BY {ordina_per}"
+            sql += f" ORDER BY {ordina_per}"
         if limite:
             sql += f" LIMIT {limite}"
 
-
         result = session.execute(text(sql), args or {})
-        if colonne == "*":
-          records = [dict(row) for row in result]  # Trasforma ogni riga in un dizionario se si selezionano tutte le colonne
+
+        # Ensure we have a result and we can get column names
+        if result.returns_rows:
+            # Extract the column names from the result
+            column_names = result.keys()
+            records = [dict(zip(column_names, row)) for row in result.fetchall()]
+            return records
         else:
-           records = [dict(zip(result.keys(), row)) for row in result] # Trasforma ogni riga in un dizionario usando le chiavi e i valori quando si seleziona una sola colonna
-        return records
+            return []
+
     except Exception as e:
         print(f"Errore durante la selezione dei record dalla tabella {nome_tabella}: {e}")
         return False
+
 
 if __name__ == '__main__':
     #pass

@@ -1,7 +1,7 @@
-# File: pages/Inventory_Management.py
 import streamlit as st
 import pandas as pd
-from utils.MagDBcontroller import connessione, selectSQL
+from sqlalchemy import text
+from utils.MagDBcontroller import connessione, select_recordsSQL
 from streamlit_extras.switch_page_button import switch_page
 
 # Verifica autenticazione
@@ -10,28 +10,10 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
     switch_page("Login")
     st.stop()
 
-def fetch_inventory_data():
-    with connessione() as conn:
-        # Query per ottenere i dettagli completi dell'inventario
-        query = """
-        SELECT 
-            Prodotti.Nome AS Prodotto, 
-            Prodotti.Codice AS Codice_Prodotto, 
-            Zone.Nome AS Zona, 
-            Scaffalature.Nome AS Scaffalatura, 
-            Lotti.Quantita, 
-            Lotti.Scadenza, 
-            Lotti.Stato
-        FROM Lotti
-        JOIN Prodotti ON Lotti.ID_Prodotto = Prodotti.ID_Prodotto
-        JOIN Zone ON Lotti.ID_Zona = Zone.ID_Zona
-        JOIN Scaffalature ON Lotti.ID_Scaffalatura = Scaffalature.ID_Scaffalatura
-        ORDER BY Prodotti.Nome, Zone.Nome, Lotti.Scadenza
-        """
-        return pd.read_sql(query, conn)
-
 # Titolo della pagina
 st.title("Gestione Inventario")
+
+# Sidebar menu
 st.sidebar.page_link('Home.py', label='Home')
 st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
 st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
@@ -43,34 +25,63 @@ if st.sidebar.button("Log Out"):
     st.session_state.clear()
     st.rerun()
 
-try:
-    # Carica i dati dell'inventario
-    inventory_data = fetch_inventory_data()
+# Connessione al database
+session = connessione()
+
+# Visualizza prodotti
+st.subheader("Prodotti")
+prodotti = select_recordsSQL(session, "Prodotti")
+
+if prodotti:
+    df_prodotti = pd.DataFrame(prodotti)
+    st.dataframe(df_prodotti)
+else:
+    st.error("Errore nel recuperare i prodotti dal database.")
+
+# Visualizza zone di magazzino
+st.subheader("Zone di Magazzino")
+zone = select_recordsSQL(session, "Zone")
+
+if zone:
+    df_zone = pd.DataFrame(zone)
+    st.dataframe(df_zone)
+else:
+    st.error("Errore nel recuperare le zone di magazzino dal database.")
+
+# Visualizza scaffalature
+st.subheader("Scaffalature")
+scaffalature = select_recordsSQL(session, "Scaffalature")
+
+if scaffalature:
+    df_scaffalature = pd.DataFrame(scaffalature)
+    st.dataframe(df_scaffalature)
+else:
+    st.error("Errore nel recuperare le scaffalature dal database.")
+
+# Gestione dei lotti
+st.subheader("Gestione Lotti")
+lotti = select_recordsSQL(session, "Lotti")
+
+if lotti:
+    df_lotti = pd.DataFrame(lotti)
+    st.dataframe(df_lotti)
     
-    # Visualizza il riepilogo dell'inventario
-    st.write("### Dettagli Inventario")
+    # Opzioni per modificare stato del lotto
+    lotto_id = st.selectbox("Seleziona un Lotto", df_lotti['ID_Lotto'])
+    nuovo_stato = st.selectbox("Nuovo Stato", ['Disponibile', 'In transito', 'Prenotato'])
     
-    # Visualizza i dati in formato tabella
-    st.dataframe(inventory_data)
-    
-    # Opzionalmente, puoi aggiungere dei filtri per l'utente, come ad esempio per prodotto o zona
-    st.write("### Filtra Inventario")
-    
-    prodotto_filtro = st.selectbox("Seleziona il prodotto:", options=inventory_data['Prodotto'].unique())
-    zona_filtro = st.selectbox("Seleziona la zona:", options=inventory_data['Zona'].unique())
-    
-    # Applica i filtri
-    filtered_data = inventory_data[
-        (inventory_data['Prodotto'] == prodotto_filtro) & 
-        (inventory_data['Zona'] == zona_filtro)
-    ]
-    
-    # Mostra i dati filtrati
-    if not filtered_data.empty:
-        st.write(f"Risultati per prodotto: {prodotto_filtro} e zona: {zona_filtro}")
-        st.dataframe(filtered_data)
-    else:
-        st.write("Nessun dato trovato per i criteri selezionati.")
-        
-except Exception as e:
-    st.error(f"Errore durante il caricamento dei dati: {e}")
+    if st.button("Aggiorna Stato Lotto"):
+        # Update the lotto state
+        try:
+            sql_update = f"""
+                UPDATE Lotti
+                SET Stato = :stato
+                WHERE ID_Lotto = :lotto_id
+            """
+            session.execute(text(sql_update), {"stato": nuovo_stato, "lotto_id": lotto_id})
+            session.commit()
+            st.success(f"Stato del lotto {lotto_id} aggiornato con successo!")
+        except Exception as e:
+            st.error(f"Errore durante l'aggiornamento dello stato del lotto: {e}")
+else:
+    st.error("Errore nel recuperare i lotti dal database.")
