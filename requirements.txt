@@ -1,4 +1,6 @@
 streamlit
 bcrypt
 streamlit-extras
-
+sqlalchemy
+pymysql
+pandas
