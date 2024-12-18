@@ -49,7 +49,7 @@ def login_signup():
             try:
                 with connessione() as conn:
                     if conn:
-                        success = add_recordSQL("Credenziali",new_user_data )
+                        success = add_recordSQL(conn,"Credenziali",new_user_data )
                         if success:
                             st.success("Registrazione avvenuta con successo! Esegui l'accesso.")
                         else:

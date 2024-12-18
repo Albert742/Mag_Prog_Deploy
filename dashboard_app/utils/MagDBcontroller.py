@@ -2,31 +2,18 @@ from sqlalchemy import create_engine, text, insert, MetaData, table
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError, IntegrityError
 import time
+import toml
 
-def connessione(**kwargs):
-    """
-    Connessione al database con configurazione tramite kwargs usando SQLAlchemy.
-    
-    Args:
-        host (str): Indirizzo IP o nome del server del database.
-        user (str): Nome utente del database.
-        password (str): Password del database.
-        database (str): Nome del database.
-        port (int): Numero di porta da utilizzare per la connessione.
-    
-    Returns:
-        session: Sessione di connessione al database.
-    """
-    default_config = {
-        'host': 'udbj1.h.filess.io',
-        'user': 'testmag_walkflies',
-        'password': '911eb8190814d71e66a1f593d999b20759efe741',  # Replace with your actual password
-        'database': 'testmag_walkflies',
-        'port': 3305
-    }
-    config = {**default_config, **kwargs}
+def connessione():
+    toml_data = toml.load(".streamlit/secrets.toml")
 
-    connection_string = f"mysql+pymysql://{config['user']}:{config['password']}@{config['host']}:{config['port']}/{config['database']}"
+    host = toml_data["mysql"]["host"]
+    user = toml_data["mysql"]["username"]
+    password = toml_data["mysql"]["password"]
+    database = toml_data["mysql"]["database"]
+    port = toml_data["mysql"]["port"]
+
+    connection_string = f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}"
 
     engine = None
     session = None
@@ -50,6 +37,7 @@ def connessione(**kwargs):
                 return None
 
     return None
+
 
 def query(session, sql, args=None, commit=False):
     """
@@ -729,59 +717,33 @@ def populateSQL():
                 conn.rollback()
                 print(f"Errore durante l'inserimento dei turni: {e}")
 
-def add_recordSQL(table_name, record_data):
+from sqlalchemy import text
+
+def add_recordSQL(session, nome_tabella, dati):
     """
-    Aggiunge un record al database.
+    Aggiunge un nuovo record a una tabella.
 
-    Parametri:
-        table_name (str): Nome della tabella
-        record_data (dict): Dati del record da inserire
+    Args:
+        session: L'oggetto sessione SQLAlchemy.
+        nome_tabella (str): Il nome della tabella in cui inserire il record.
+        dati (dict): Un dizionario che mappa i nomi delle colonne ai valori da inserire.
 
-    Ritorna:
-        int: Ultimo ID inserito (se l'operazione va a buon fine)
-        False: Se l'operazione fallisce
+    Returns:
+        bool: True se l'inserimento ha avuto successo, False in caso di errore.
     """
-    with connessione() as conn:
-        if conn:
-            metadata = MetaData()
-            metadata.reflect(bind=conn.bind)
-            try:
-                target_table = metadata.tables[table_name.lower()]
-                columns = target_table.columns
-                required_columns = {col.name for col in columns if not col.nullable and col.name != 'ID_Dipendente'}
+    try:
+        colonne = ", ".join(f"`{key}`" for key in dati.keys())
+        valori = ", ".join(f":{key}" for key in dati.keys())
+        sql = f"INSERT INTO `{nome_tabella}` ({colonne}) VALUES ({valori})"
 
-                # Check for missing required fields
-                missing_fields = required_columns - set(record_data.keys())
-                if missing_fields:
-                    raise ValueError(f"Campi mancanti: {', '.join(missing_fields)}")
+        session.execute(text(sql), dati)
+        session.commit()  # Importante: Effettua il commit per salvare le modifiche
+        return True
 
-                # Only remove ID_Dipendente if it's not provided by the user
-                if 'ID_Dipendente' not in record_data:
-                    # remove ID_Dipendente only if it is not present in record_data
-                    pass # No action needed if not present, already handled in insert query.
-                else:
-                    # Handle ID_Dipendente, allow user input if provided
-                    pass
-
-                result = conn.execute(insert(target_table).values(record_data))
-                conn.commit()
-                return result.lastrowid
-            except KeyError:
-                print(f"Errore: Tabella '{table_name}' non trovata.")
-                return False
-            except IntegrityError as e:
-                conn.rollback()
-                print(f"Errore di integrità (chiave duplicata?): {e}")
-                return False
-            except ValueError as e:
-                conn.rollback()
-                print(f"Errore: {e}")  # Print the specific missing columns
-                return False
-            except Exception as e:
-                conn.rollback()
-                print(f"Errore durante l'inserimento del record nella tabella {table_name}: {e}")
-                return False
-    return False
+    except Exception as e:
+        session.rollback()  # Annulla le modifiche in caso di errore
+        print(f"Errore durante l'inserimento del record nella tabella {nome_tabella}: {e}")
+        return False
 
 def update_recordSQL(session, nome_tabella, dati_aggiornamento, condizione, args):
     """
