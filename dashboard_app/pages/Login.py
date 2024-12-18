@@ -20,7 +20,7 @@ def autentica_utente(username, password):
         if conn:
             condizione = "Username = :username"
             args = {"username": username}
-            result = select_recordsSQL(conn, "credenziali", "Password", condizione, args)
+            result = select_recordsSQL(conn, "Credenziali", "Password", condizione, args)
             if result:
                 if len(result) == 1:  # Assicura che ci sia un solo utente corrispondente
                     hashed_password = result[0]['Password']
@@ -49,7 +49,7 @@ def login_signup():
             try:
                 with connessione() as conn:
                     if conn:
-                        success = add_recordSQL("credenziali",new_user_data )
+                        success = add_recordSQL("Credenziali",new_user_data )
                         if success:
                             st.success("Registrazione avvenuta con successo! Esegui l'accesso.")
                         else:

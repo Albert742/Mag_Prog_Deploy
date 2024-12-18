@@ -18,11 +18,11 @@ def connessione(**kwargs):
         session: Sessione di connessione al database.
     """
     default_config = {
-        'host': '127.0.0.1',
-        'user': 'root',
-        'password': '1234',  # Replace with your actual password
-        'database': 'magazzinov2',
-        'port': 3307
+        'host': 'udbj1.h.filess.io',
+        'user': 'testmag_walkflies',
+        'password': '911eb8190814d71e66a1f593d999b20759efe741',  # Replace with your actual password
+        'database': 'testmag_walkflies',
+        'port': 3305
     }
     config = {**default_config, **kwargs}
 
@@ -387,7 +387,7 @@ def populateSQL():
             metadata.reflect(bind=conn.bind)  # Reflect the database schema
 
             # Fornitori
-            fornitori_table = metadata.tables["fornitori"]
+            fornitori_table = metadata.tables["Fornitori"]
             fornitori_data = [
                 {"Nome": "Fornitore A", "Indirizzo": "Via Roma 1, Milano", "Telefono": "0212345678", "Email": "fornitoreA@email.com", "PartitaIVA": "IT12345678901"},
                 {"Nome": "Fornitore B", "Indirizzo": "Corso Italia 2, Roma", "Telefono": "0698765432", "Email": "fornitoreB@email.com", "PartitaIVA": "IT98765432109"},
@@ -404,7 +404,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento dei fornitori: {e}")
 
             # Prodotti
-            prodotti_table = metadata.tables["prodotti"]
+            prodotti_table = metadata.tables["Prodotti"]
             prodotti_data = [
                 {"ID_Fornitore": 1, "Nome": "Pasta di Grano Duro", "Produttore": "Pastificio Italia", "Tipo": "Alimentare", "UnitaMisura": "kg"},
                 {"ID_Fornitore": 1, "Nome": "Olio Extra Vergine di Oliva", "Produttore": "Oleificio Sole", "Tipo": "Alimentare", "UnitaMisura": "l"},
@@ -426,7 +426,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento dei prodotti: {e}")
 
             # Zone
-            zone_table = metadata.tables["zone"]
+            zone_table = metadata.tables["Zone"]
             zone_data = [
                 {"Nome": "Stoccaggio Alimentari", "Tipo": "Stoccaggio_Alimentari", "Descrizione": "Zona di stoccaggio per prodotti alimentari"},
                 {"Nome": "Stoccaggio Farmaceutici", "Tipo": "Stoccaggio_Farmaceutici", "Descrizione": "Zona di stoccaggio per prodotti farmaceutici"},
@@ -442,7 +442,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento delle zone: {e}")
                 
             # Scaffalature
-            scaffalature_table = metadata.tables["scaffalature"]
+            scaffalature_table = metadata.tables["Scaffalature"]
             scaffalature_data = [
                 {"ID_Zona": 1, "Nome": "Scaffale A1", "Capacita": 100},
                 {"ID_Zona": 1, "Nome": "Scaffale A2", "Capacita": 80},
@@ -460,7 +460,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento delle scaffalature: {e}")
 
             # Lotti
-            lotti_table = metadata.tables["lotti"]
+            lotti_table = metadata.tables["Lotti"]
             lotti_data = [
                 {"ID_Prodotto": 1, "ID_Zona": 1, "ID_Scaffalatura": 1, "Lotto": "Lotto001", "Scadenza": "2024-12-31", "Quantita": 500, "PrezzoAcquisto": 1.50, "DataRicevimento": "2023-01-15", "Stato": "Disponibile"},
                 {"ID_Prodotto": 1, "ID_Zona": 1, "ID_Scaffalatura": 2, "Lotto": "Lotto002", "Scadenza": "2025-01-31", "Quantita": 300, "PrezzoAcquisto": 1.60, "DataRicevimento": "2023-02-20", "Stato": "Disponibile"},
@@ -476,7 +476,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento dei lotti: {e}")
 
             # Clienti
-            clienti_table = metadata.tables["clienti"]
+            clienti_table = metadata.tables["Clienti"]
             clienti_data = [
                 {"Nome": "Cliente X", "Indirizzo": "Via Verdi 10, Milano", "Telefono": "0212345679", "Email": "clienteX@email.com", "PartitaIVA": "IT11122233344"},
                 {"Nome": "Cliente Y", "Indirizzo": "Piazza Roma 20, Roma", "Telefono": "0698765433", "Email": "clienteY@email.com", "PartitaIVA": "IT55566677788"}
@@ -490,7 +490,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento dei clienti: {e}")
 
             # Ordini
-            ordini_table = metadata.tables["ordini"]
+            ordini_table = metadata.tables["Ordini"]
             ordini_data = [
                 {"DataOrdine": "2023-10-27 10:00:00", "Tipo": "Entrata", "ID_Fornitore": 1, "ID_Cliente": None, "Stato": "Concluso"},
                 {"DataOrdine": "2023-10-28 11:30:00", "Tipo": "Uscita", "ID_Fornitore": None, "ID_Cliente": 1, "Stato": "Spedito"},
@@ -505,7 +505,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento degli ordini: {e}")
 
             # DettagliOrdini
-            dettagli_ordini_table = metadata.tables["dettagliordini"]
+            dettagli_ordini_table = metadata.tables["DettagliOrdini"]
             dettagli_ordini_data = [
                 {"ID_Ordine": 1, "ID_Lotto": 1, "Quantita": 200},
                 {"ID_Ordine": 1, "ID_Lotto": 2, "Quantita": 100},
@@ -520,7 +520,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento dei dettagli ordini: {e}")
 
             # BaieCaricoScarico
-            baie_table = metadata.tables["baiecaricoscarico"]
+            baie_table = metadata.tables["BaieCaricoScarico"]
             baie_data = [
                 {"ZonaID": 3, "Nome": "Baia Carico 1", "Tipo": "Carico", "Stato": "Libera"},
                 {"ZonaID": 4, "Nome": "Baia Scarico 1", "Tipo": "Scarico", "Stato": "Libera"},
@@ -534,7 +534,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento delle baie: {e}")
 
             # Sensori
-            sensori_table = metadata.tables["sensori"]
+            sensori_table = metadata.tables["Sensori"]
             sensori_data = [
                 {"Tipo": "Presenza", "ID_Zona": 1, "Valore": 1},
                 {"Tipo": "Temperatura", "ID_Zona": 1, "Valore": 25.5},
@@ -549,7 +549,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento dei sensori: {e}")
 
             # StazioneRicarica
-            stazione_ricarica_table = metadata.tables["stazionericarica"]
+            stazione_ricarica_table = metadata.tables["StazioneRicarica"]
             stazioni_ricarica_data = [
                 {"ZonaID": 1, "Nome": "Stazione Ricarica 1", "Stato": "Libera"},
             ]
@@ -562,7 +562,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento delle stazioni di ricarica: {e}")
 
             # Robot
-            robot_table = metadata.tables["robot"]
+            robot_table = metadata.tables["Robot"]
             robot_data = [
                 {"ID_Sensore": 1, "ID_Zona": 1, "Nome": "Robot A", "Stato": "Disponibile", "PosizioneAttuale": "Scaffale A1", "Capacita": 100, "ID_Ricarica": 1},
                 {"ID_Sensore": 2, "ID_Zona": 1, "Nome": "Robot B", "Stato": "Disponibile", "PosizioneAttuale": "Scaffale A2", "Capacita": 120, "ID_Ricarica": 1},
@@ -576,7 +576,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento dei robot: {e}")
 
             # RichiesteMovimento
-            richieste_table = metadata.tables["richiestemovimento"]
+            richieste_table = metadata.tables["RichiesteMovimento"]
             richieste_data = [
                 {"ID_Lotto": 1, "ID_Zona_Destinazione": 2, "ID_Scaffalatura_Destinazione": 1, "Priorita": 1, "Stato": "Completata", "ID_Robot": 1, "DataRichiesta": "2023-10-27 10:00:00", "DataCompletamento": "2023-10-27 10:15:00"},
             ]
@@ -589,7 +589,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento delle richieste di movimento: {e}")
 
             # StoricoMovimentiMagazzino
-            storico_table = metadata.tables["storicomovimentimagazzino"]
+            storico_table = metadata.tables["StoricoMovimentiMagazzino"]
             storico_data = [
                 {"ID_Lotto": 1, "DataMovimento": "2023-10-27 10:15:00", "TipoMovimento": "Spostamento", "Quantita": 200, "ID_Zona_Partenza": 1, "ID_Zona_Arrivo": 2},
             ]
@@ -602,7 +602,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento dello storico movimenti: {e}")
 
             # ControlloQualitaMovimenti
-            controllo_table = metadata.tables["controlloqualitamovimenti"]
+            controllo_table = metadata.tables["ControlloQualitaMovimenti"]
             controllo_data = [
                 {"ID_Richiesta": 1, "ID_Robot": 1, "Esito": "Successo", "Note": "Controllo ok", "DataControllo": "2023-10-27 10:15:00"},
             ]
@@ -615,7 +615,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento dei controlli qualità: {e}")
 
             # Veicoli
-            veicoli_table = metadata.tables["veicoli"]
+            veicoli_table = metadata.tables["Veicoli"]
             veicoli_data = [
                 {"Tipo": "Bilico", "Capacita": 10000, "Stato": "Disponibile", "Targa": "AA123BB"},
                 {"Tipo": "Furgone", "Capacita": 2000, "Stato": "Disponibile", "Targa": "CC456DD"},
@@ -630,7 +630,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento dei veicoli: {e}")
 
             # Consegne
-            consegne_table = metadata.tables["consegne"]
+            consegne_table = metadata.tables["Consegne"]
             consegne_data = [
                 {"ID_Ordine": 2, "ID_Veicolo": 1, "DataConsegna": "2023-10-28", "Stato": "Completata"},
                 {"ID_Ordine": 3, "ID_Veicolo": 2, "DataConsegna": "2023-10-30", "Stato": "In corso"}
@@ -644,7 +644,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento delle consegne: {e}")
 
             # ManutenzioneRobot
-            manutenzione_robot_table = metadata.tables["manutenzionerobot"]
+            manutenzione_robot_table = metadata.tables["ManutenzioneRobot"]
             manutenzione_robot_data = [
                 {"ID_Robot": 1, "DataManutenzione": "2023-11-10", "Tipo": "Ordinaria", "Stato": "Programmata", "Note": "Controllo generale"},
                 {"ID_Robot": 2, "DataManutenzione": "2023-11-15", "Tipo": "Straordinaria", "Stato": "Programmata", "Note": "Sostituzione batteria"}
@@ -658,7 +658,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento delle manutenzioni robot: {e}")
 
             # ManutenzioneScaffalature
-            manutenzione_scaffalature_table = metadata.tables["manutenzionescaffalature"]
+            manutenzione_scaffalature_table = metadata.tables["ManutenzioneScaffalature"]
             manutenzione_scaffalature_data = [
                 {"ID_Scaffalatura": 1, "DataManutenzione": "2023-11-05", "Tipo": "Controllo", "Stato": "Programmata", "Note": "Verifica Bulloneria"},
                 {"ID_Scaffalatura": 2, "DataManutenzione": "2023-11-08", "Tipo": "Riparazione", "Stato": "Programmata", "Note": "Sostituzione mensole"}
@@ -672,7 +672,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento delle manutenzioni scaffalature: {e}")
 
             # ManutenzioneZone
-            manutenzione_zone_table = metadata.tables["manutenzionezone"]
+            manutenzione_zone_table = metadata.tables["ManutenzioneZone"]
             manutenzione_zone_data = [
                 {"ID_Zona": 1, "DataManutenzione": "2023-11-20", "Tipo": "Pulizia", "Stato": "Programmata", "Note": "Pulizia e sanificazione"},
                 {"ID_Zona": 2, "DataManutenzione": "2023-11-25", "Tipo": "Riparazione", "Stato": "Programmata", "Note": "Riparazione illuminazione"}
@@ -686,7 +686,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento delle manutenzioni zone: {e}")
 
             # ManutenzioneVeicoli
-            manutenzione_veicoli_table = metadata.tables["manutenzioneveicoli"]
+            manutenzione_veicoli_table = metadata.tables["ManutenzioneVeicoli"]
             manutenzione_veicoli_data = [
                 {"ID_Veicolo": 1, "DataManutenzione": "2023-11-12", "Tipo": "Controllo", "Stato": "Programmata", "Note": "Controllo freni e livelli"},
                 {"ID_Veicolo": 2, "DataManutenzione": "2023-11-18", "Tipo": "Riparazione", "Stato": "Programmata", "Note": "Sostituzione pneumatici"}
@@ -700,7 +700,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento delle manutenzioni veicoli: {e}")
 
             # Dipendenti
-            dipendenti_table = metadata.tables["dipendenti"]
+            dipendenti_table = metadata.tables["Dipendenti"]
             dipendenti_data = [
                 {"ID_Dipendente": "ADM001", "CodiceFiscale": "RSSMRA80A01H501R", "Nome": "Mario", "Cognome": "Rossi", "Ruolo": "Amministratore", "Mansione": "Amministratore", "DataAssunzione": "2020-01-01"},
                 {"ID_Dipendente": "OPR001", "CodiceFiscale": "GLLGNN90B02H501Z", "Nome": "Giovanni", "Cognome": "Gialli", "Ruolo": "Operatore", "Mansione": "Magazziniere", "DataAssunzione": "2021-02-01"},
@@ -714,8 +714,8 @@ def populateSQL():
                 conn.rollback()
                 print(f"Errore durante l'inserimento dei dipendenti: {e}")
 
-            # turniDipendenti
-            turni_table = metadata.tables["turnidipendenti"]
+            # TurniDipendenti
+            turni_table = metadata.tables["TurniDipendenti"]
             turni_data = [
                 {"ID_Dipendente": "ADM001", "DataInizio": "2023-10-27 09:00:00", "DataFine": "2023-10-27 18:00:00", "Mansione": "Amministratore"},
                 {"ID_Dipendente": "OPR001", "DataInizio": "2023-10-27 08:00:00", "DataFine": "2023-10-27 16:00:00", "Mansione": "Magazziniere"},
@@ -808,7 +808,7 @@ def update_recordSQL(session, nome_tabella, dati_aggiornamento, condizione, args
         print(f"Errore durante l'aggiornamento dalla tabella {nome_tabella}: {e}")
         return False
 
-def delete_recordSQL(session, nome_tabella, condizione):
+def delete_recordSQL(session, nome_tabella, condizione, args):
     """
     Elimina i record da una tabella in base a una condizione.
 
@@ -823,11 +823,15 @@ def delete_recordSQL(session, nome_tabella, condizione):
     """
     try:
         sql = f"DELETE FROM `{nome_tabella}` WHERE {condizione}"
-        result = session.execute(text(sql))
+        result = session.execute(text(sql), args or {})
+        rows_deleted = result.rowcount
         session.commit()
-        return result.rowcount
+        if rows_deleted > 0:
+            return rows_deleted
+        else:
+            return 0  # Indicate no rows were deleted
     except Exception as e:
-        session.rollback() # Annulla le modifiche in caso di errore
+        session.rollback()
         print(f"Errore durante l'eliminazione dalla tabella {nome_tabella}: {e}")
         return False
 
@@ -941,9 +945,32 @@ if __name__ == '__main__':
                 session = connessione()
                 if session:
                     table_name = input("Nome della tabella: ")
-                    condition = input("Condizione WHERE (es. ID = 1): ")
-                    delete_recordSQL(session, table_name, condition)
-                    print("Record eliminato con successo.")
+                    condition_parts = []
+                    args = {}
+                    while True:
+                        col_cond = input("Condizione per colonna (es. ID_Prodotto=:id, premi invio per terminare): ")
+                        if not col_cond:
+                            break
+                        parts = col_cond.split("=")
+                        if len(parts) == 2:
+                            condition_parts.append(col_cond)
+                            try:
+                                args[parts[1].replace(":", "")] = int(input(f"Valore per {parts[0].strip()}: "))
+                            except ValueError:
+                                args[parts[1].replace(":", "")] = input(f"Valore per {parts[0].strip()}: ")
+
+                    condition = " AND ".join(condition_parts) if condition_parts else None
+                    if condition is None:
+                        condition = input("Condizione WHERE (es. ID_Prodotto=1, premi invio se nessuna condizione): ")
+
+                    rows_deleted = delete_recordSQL(session, table_name, condition, args)  # Correct argument passing
+                    if rows_deleted is False:
+                        print(f"Errore nell'eliminazione dei record dalla tabella {table_name}.")
+                    elif rows_deleted > 0:
+                        print(f"Eliminati {rows_deleted} record dalla tabella {table_name}.")
+                    else:
+                        print(f"Nessun record eliminato dalla tabella {table_name}.")
+
                     session.close()
             elif choice == '6':
                 session = connessione()
@@ -956,7 +983,6 @@ if __name__ == '__main__':
 
                     args = {}
                     if condition:
-                        # Simple placeholder replacement for demonstration.  Improve this for more complex conditions.
                         if ":id" in condition:
                             args["id"] = int(input("Inserisci l'ID: "))
 
@@ -971,6 +997,7 @@ if __name__ == '__main__':
                     session.close()
 
             elif choice == '7':
+                print("Uscita dal programma. Arrivederci")
                 break
             else:
                 print("Scelta non valida.")
