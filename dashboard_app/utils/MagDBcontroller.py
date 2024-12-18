@@ -22,7 +22,7 @@ def connessione(**kwargs):
         'user': 'root',
         'password': '1234',  # Replace with your actual password
         'database': 'magazzinov2',
-        'port': 3306
+        'port': 3307
     }
     config = {**default_config, **kwargs}
 
@@ -50,7 +50,6 @@ def connessione(**kwargs):
                 return None
 
     return None
-
 
 def query(session, sql, args=None, commit=False):
     """
@@ -80,8 +79,6 @@ def query(session, sql, args=None, commit=False):
         print(f"Errore durante l'esecuzione della query: {e}")
         return False
 
-
-
 def create_tableSQL(session, nome_tabella, definizione):
     """
     Crea una tabella nel database se non esiste.
@@ -96,7 +93,6 @@ def create_tableSQL(session, nome_tabella, definizione):
     """
     sql = f"CREATE TABLE IF NOT EXISTS `{nome_tabella}` ({definizione})"
     return query(session, sql, commit=True)
-
 
 def init_tables(session):
     """
@@ -361,7 +357,6 @@ def init_tables(session):
     for nome_tabella, definizione in tabelle.items():
         create_tableSQL(session, nome_tabella, definizione)
 
-
 def initSQL():
     """
     Funzione per inizializzare le tabelle del database.
@@ -374,7 +369,6 @@ def initSQL():
     with connessione() as conn:
         if conn:
             init_tables(conn)
-
 
 def populateSQL():
     """
@@ -752,26 +746,44 @@ def add_recordSQL(table_name, record_data):
             metadata = MetaData()
             metadata.reflect(bind=conn.bind)
             try:
-                # Verifica se la tabella esiste
                 target_table = metadata.tables[table_name.lower()]
-                # Inserisce il record
+                columns = target_table.columns
+                required_columns = {col.name for col in columns if not col.nullable and col.name != 'ID_Dipendente'}
+
+                # Check for missing required fields
+                missing_fields = required_columns - set(record_data.keys())
+                if missing_fields:
+                    raise ValueError(f"Campi mancanti: {', '.join(missing_fields)}")
+
+                # Only remove ID_Dipendente if it's not provided by the user
+                if 'ID_Dipendente' not in record_data:
+                    # remove ID_Dipendente only if it is not present in record_data
+                    pass # No action needed if not present, already handled in insert query.
+                else:
+                    # Handle ID_Dipendente, allow user input if provided
+                    pass
+
                 result = conn.execute(insert(target_table).values(record_data))
-                # Conferma le modifiche
                 conn.commit()
-                print(f"Record aggiunto alla tabella {table_name} con successo.")
-                # Ritorna l'ultimo ID inserito
                 return result.lastrowid
             except KeyError:
                 print(f"Errore: Tabella '{table_name}' non trovata.")
                 return False
+            except IntegrityError as e:
+                conn.rollback()
+                print(f"Errore di integrità (chiave duplicata?): {e}")
+                return False
+            except ValueError as e:
+                conn.rollback()
+                print(f"Errore: {e}")  # Print the specific missing columns
+                return False
             except Exception as e:
-                # Annulla l'operazione se qualcosa va storto
                 conn.rollback()
                 print(f"Errore durante l'inserimento del record nella tabella {table_name}: {e}")
                 return False
     return False
 
-def update_recordSQL(session, nome_tabella, dati_aggiornamento, condizione):
+def update_recordSQL(session, nome_tabella, dati_aggiornamento, condizione, args):
     """
     Aggiorna i record in una tabella in base a una condizione.
 
@@ -788,14 +800,13 @@ def update_recordSQL(session, nome_tabella, dati_aggiornamento, condizione):
     try:
         set_clause = ", ".join([f"{key} = :{key}" for key in dati_aggiornamento])
         sql = f"UPDATE `{nome_tabella}` SET {set_clause} WHERE {condizione}"
-        result = session.execute(text(sql), dati_aggiornamento)
+        result = session.execute(text(sql), dati_aggiornamento | args)  # Combine dictionaries
         session.commit()
         return result.rowcount
     except Exception as e:
-        session.rollback() # Annulla le modifiche in caso di errore
+        session.rollback()
         print(f"Errore durante l'aggiornamento dalla tabella {nome_tabella}: {e}")
         return False
-
 
 def delete_recordSQL(session, nome_tabella, condizione):
     """
@@ -820,46 +831,6 @@ def delete_recordSQL(session, nome_tabella, condizione):
         print(f"Errore durante l'eliminazione dalla tabella {nome_tabella}: {e}")
         return False
 
-"""
-def select_recordsSQL(session, nome_tabella, colonne="*", condizione=None, args=None, ordina_per=None, limite=None):
-"""
-"""
-    Seleziona i record da una tabella in base a condizioni, ordinamento e limite opzionali.
-
-    Args:
-        session: L'oggetto sessione SQLAlchemy.
-        nome_tabella (str): Il nome della tabella da cui selezionare.
-        colonne (str, optional): Lista di colonne separate da virgola da selezionare. Default a * per selezionare tutte le colonne.
-        condizione (str, optional): La clausola SQL WHERE (es., "ID > :id"). Default a None.
-        args (dict, optional) : Dizionario di parametri
-        ordina_per (str, optional): La clausola SQL ORDER BY (es., "Nome ASC"). Default a None.
-        limite (int, optional): La clausola SQL LIMIT. Default a None.
-
-    Returns:
-        list: Una lista di dizionari, dove ogni dizionario rappresenta un record.
-        Restituisce False in caso di errore.
-"""
-"""
-    try:
-        sql = f"SELECT {colonne} FROM `{nome_tabella}`"
-        if condizione:
-           sql += f" WHERE {condizione}"
-        if ordina_per:
-           sql += f" ORDER BY {ordina_per}"
-        if limite:
-            sql += f" LIMIT {limite}"
-
-
-        result = session.execute(text(sql), args or {})
-        if colonne == "*":
-          records = [dict(row) for row in result]  # Trasforma ogni riga in un dizionario se si selezionano tutte le colonne
-        else:
-           records = [dict(zip(result.keys(), row)) for row in result] # Trasforma ogni riga in un dizionario usando le chiavi e i valori quando si seleziona una sola colonna
-        return records
-    except Exception as e:
-        print(f"Errore durante la selezione dei record dalla tabella {nome_tabella}: {e}")
-        return False
-"""
 def select_recordsSQL(session, nome_tabella, colonne="*", condizione=None, args=None, ordina_per=None, limite=None):
     """
     Seleziona i record da una tabella in base a condizioni, ordinamento e limite opzionali.
@@ -903,6 +874,106 @@ def select_recordsSQL(session, nome_tabella, colonne="*", condizione=None, args=
 
 
 if __name__ == '__main__':
-    #pass
-    initSQL()
-    populateSQL()
+    while True:
+        print("\nMenu di Test funzionalità:")
+        print("1. Inizializza tabelle")
+        print("2. Popola tabelle con dati di esempio")
+        print("3. Aggiungi record")
+        print("4. Aggiorna record")
+        print("5. Elimina record")
+        print("6. Seleziona record")
+        print("7. Esci")
+
+        choice = input("Inserisci la tua scelta: ")
+
+        try:
+            if choice == '1':
+                initSQL()
+            elif choice == '2':
+                populateSQL()
+            elif choice == '3':
+                table_name = input("Nome della tabella: ")
+                record_data = {}
+                while True:
+                    column_name = input("Nome colonna (o premi invio per terminare): ")
+                    if not column_name:
+                        break
+                    value = input(f"Valore per {column_name}: ")
+                    record_data[column_name] = value
+
+                last_id = add_recordSQL(table_name, record_data)
+
+                if last_id:
+                    print(f"Record aggiunto alla tabella {table_name} con successo. ID: {last_id}")
+                else:
+                    print(f"Errore nell'aggiunta del record alla tabella {table_name}. Controllare la presenza di errori nel log o verificare la correttezza dei dati inseriti.")
+            elif choice == '4':
+                session = connessione()
+                if session:
+                    table_name = input("Nome della tabella: ")
+                    update_data = {}
+                    condition_parts = []
+                    args = {}
+                    while True:
+                        column_name = input("Nome colonna da aggiornare (o premi invio per terminare): ")
+                        if not column_name:
+                            break
+                        value = input(f"Nuovo valore per {column_name}: ")
+                        update_data[column_name] = value
+
+                    while True:
+                        col_cond = input("Condizione per colonna (es. ID_Dipendente=:id, premi invio per terminare): ")
+                        if not col_cond:
+                            break
+                        parts = col_cond.split("=")
+                        if len(parts) == 2:
+                            condition_parts.append(col_cond)
+                            args[parts[1].replace(":", "")] = input(f"Valore per {parts[0].strip()}: ")
+
+                    condition = " AND ".join(condition_parts) if condition_parts else None
+                    if condition is None:
+                        condition = input("Condizione WHERE (es. ID_Dipendente='TEC001', premi invio se nessuna condizione):")
+
+                    update_recordSQL(session, table_name, update_data, condition, args)
+                    print("Record aggiornato con successo.")
+                    session.close()
+            elif choice == '5':
+                session = connessione()
+                if session:
+                    table_name = input("Nome della tabella: ")
+                    condition = input("Condizione WHERE (es. ID = 1): ")
+                    delete_recordSQL(session, table_name, condition)
+                    print("Record eliminato con successo.")
+                    session.close()
+            elif choice == '6':
+                session = connessione()
+                if session:
+                    table_name = input("Nome della tabella: ")
+                    columns = input("Colonne da selezionare (separate da virgole, o * per tutte): ")
+                    condition = input("Condizione WHERE (opzionale, premi invio per nessuna condizione): ")
+                    order_by = input("Ordinamento ORDER BY (opzionale, premi invio per nessun ordinamento): ")
+                    limit = input("Limite LIMIT (opzionale, premi invio per nessun limite): ")
+
+                    args = {}
+                    if condition:
+                        # Simple placeholder replacement for demonstration.  Improve this for more complex conditions.
+                        if ":id" in condition:
+                            args["id"] = int(input("Inserisci l'ID: "))
+
+
+                    results = select_recordsSQL(session, table_name, columns, condition, args, order_by, limit)
+                    if results:
+                        print("\nRisultati:")
+                        for record in results:
+                            print(record)
+                    else:
+                        print("Nessun risultato trovato.")
+                    session.close()
+
+            elif choice == '7':
+                break
+            else:
+                print("Scelta non valida.")
+
+        except Exception as e:
+            print(f"Errore imprevisto: {e}")
