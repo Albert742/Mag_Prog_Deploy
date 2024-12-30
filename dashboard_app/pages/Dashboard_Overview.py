@@ -2,6 +2,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+import time
 from utils.MagDBcontroller import connessione, select_recordsSQL
 from streamlit_extras.switch_page_button import switch_page
 
@@ -23,6 +24,8 @@ st.sidebar.success("Naviga in un'altra pagina utilizzando il menu.")
 
 # Bottone per il logout
 if st.sidebar.button("Log Out"):
+    st.success("Logout effettuato con successo. Verrai reindirizzato alla pagina di login.")
+    time.sleep(2)
     st.session_state.clear()
     st.rerun()
 

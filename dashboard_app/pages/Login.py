@@ -1,5 +1,5 @@
 import streamlit as st
-from utils.MagDBcontroller import connessione, query, add_recordSQL, select_recordsSQL
+from utils.MagDBcontroller import connessione, add_recordSQL, select_recordsSQL
 import bcrypt
 
 # Hash password con bcrypt

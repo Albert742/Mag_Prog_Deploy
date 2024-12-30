@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 from streamlit_extras.switch_page_button import switch_page
     
 # Funzione per la pagina di ingresso della dashboard
@@ -10,16 +11,15 @@ def warehouse_dashboard_home():
            switch_page("Login")
     else:
         st.sidebar.write(f"Logged in as: {st.session_state.get('username', 'Unknown')}")
-        if st.sidebar.button("Log Out"):
-            st.session_state.clear()
-            switch_page("Login")
-            st.rerun()
+    
 
     st.sidebar.page_link('Home.py', label='Home')
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
     st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
     st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
-        # Page content
+    st.sidebar.page_link('pages/test.py', label='test')
+    
+    # Contenuto della pagina
     st.image("logo.jpg", use_container_width=True)
     st.write("# Benvenuto nella Dashboard di Gestione Magazzino di Food&Pharma 📦")
     st.sidebar.success("Naviga attraverso il menu per accedere alle diverse funzionalità ")
@@ -55,6 +55,12 @@ def warehouse_dashboard_home():
         "Consiglio: Segna questo pagina come preferita per accedere rapidamente alla pagina.",
         icon="🔖",
     )
+    if st.sidebar.button("Log Out"):
+        st.success("Logout effettuato con successo. Verrai reindirizzato alla pagina di login.")
+        time.sleep(2)
+        switch_page("Login")
+        st.session_state.clear()
+        st.rerun()
 
 if __name__ == "__main__":
     warehouse_dashboard_home()
