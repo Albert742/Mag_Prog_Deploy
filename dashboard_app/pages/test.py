@@ -1,34 +1,25 @@
 import streamlit as st
-import requests
-from flask import Flask, request
+from streamlit import runtime
+from streamlit.runtime.scriptrunner import get_script_run_ctx
 
-# Initialize Flask app
-app = Flask(__name__)
+def get_remote_ip() -> str:
+    """Get remote ip."""
+    try:
+        ctx = get_script_run_ctx()
+        if ctx is None:
+            return None
 
-@app.route('/get_ip')
-def get_ip():
-    user_ip = request.remote_addr
-    return user_ip
+        session_info = runtime.get_instance().get_client(ctx.session_id)
+        if session_info is None:
+            return None
+    except Exception as e:
+        return None
 
-# Run Flask app in a separate thread
-from threading import Thread
+    return session_info.request.remote_ip
 
-def run_flask():
-    app.run(port=5000)
-
-flask_thread = Thread(target=run_flask)
-flask_thread.start()
-
-# Streamlit app
-st.title("Test IP Getter")
-
-# Get client IP from Flask endpoint
-try:
-    response = requests.get("http://localhost:5000/get_ip")
-    if response.status_code == 200:
-        client_ip = response.text
-        st.markdown(f"The remote IP is {client_ip}")
-    else:
-        st.markdown("Unable to retrieve the remote IP.")
-except Exception as e:
-    st.markdown(f"Error: {e}")
+st.title("Test ip getter")
+client_ip = get_remote_ip()
+if client_ip:
+    st.markdown(f"The remote IP is {client_ip}")
+else:
+    st.markdown("Unable to retrieve the remote IP.")
