@@ -4,6 +4,7 @@ from sqlalchemy.exc import OperationalError, IntegrityError
 import time
 import toml
 
+
 def connessione():
     """
     Esegue la connessione al database specificato nel file secrets.toml
@@ -99,56 +100,58 @@ def init_tables(session):
             Nome VARCHAR(255) NOT NULL,
             Indirizzo VARCHAR(255),
             Telefono VARCHAR(20),
-            Email VARCHAR(255),
+            Email VARCHAR(255) UNIQUE,
             PartitaIVA VARCHAR(20) UNIQUE NOT NULL
         """,
         "Prodotti": """
             ID_Prodotto INT PRIMARY KEY AUTO_INCREMENT,
             ID_Fornitore INT,
-            Nome VARCHAR(255) NOT NULL,
+            Nome VARCHAR(255) UNIQUE NOT NULL,
             Produttore VARCHAR(255),
             Tipo ENUM('Alimentare', 'Farmaceutico') NOT NULL,
-            UnitaMisura VARCHAR(50),
-            UNIQUE(Nome, Produttore),
+            QuantitàConfezione DECIMAL(10, 2) NOT NULL,
+            UnitaMisura ENUM('kg', 'g', 'l', 'ml', 'compresse', 'capsule') NOT NULL,
             FOREIGN KEY (ID_Fornitore) REFERENCES Fornitori(ID_Fornitore) ON DELETE SET NULL
         """,
-        # Gestione magazzino e lotti
         "Zone": """
             ID_Zona INT PRIMARY KEY AUTO_INCREMENT,
-            Nome VARCHAR(255) NOT NULL,
+            Nome VARCHAR(255) UNIQUE NOT NULL,
             Tipo ENUM('Stoccaggio_Alimentari', 'Stoccaggio_Farmaceutici', 'Carico', 'Scarico') NOT NULL,
             Descrizione TEXT
         """,
         "Scaffalature": """
             ID_Scaffalatura INT PRIMARY KEY AUTO_INCREMENT,
             ID_Zona INT NOT NULL,
-            Nome VARCHAR(255) NOT NULL,
-            Capacita INT,
+            Nome VARCHAR(255) UNIQUE NOT NULL,
+            CapacitàLotti INT NOT NULL DEFAULT 100,
             FOREIGN KEY (ID_Zona) REFERENCES Zone(ID_Zona) ON DELETE CASCADE
         """,
         "Lotti": """
             ID_Lotto INT PRIMARY KEY AUTO_INCREMENT,
             ID_Prodotto INT NOT NULL,
+            ID_Fornitore INT NOT NULL,
             ID_Zona INT NOT NULL,
             ID_Scaffalatura INT NOT NULL,
             Lotto VARCHAR(255),
             Scadenza DATE,
-            Quantita INT,
+            QuantitàProdotto INT NOT NULL DEFAULT 1,
+            PesoLotto DECIMAL(10, 2),
             PrezzoAcquisto DECIMAL(10, 2),
+            ValoreLotto DECIMAL(10, 2),
             DataRicevimento DATE,
-            Stato ENUM('Disponibile', 'In transito', 'Prenotato') DEFAULT 'Disponibile',
+            Stato ENUM('Disponibile', 'Esaurito', 'In transito', 'Prenotato') DEFAULT 'Disponibile',
             FOREIGN KEY (ID_Prodotto) REFERENCES Prodotti(ID_Prodotto) ON DELETE CASCADE,
+            FOREIGN KEY (ID_Fornitore) REFERENCES Fornitori(ID_Fornitore) ON DELETE CASCADE,
             FOREIGN KEY (ID_Zona) REFERENCES Zone(ID_Zona) ON DELETE CASCADE,
             FOREIGN KEY (ID_Scaffalatura) REFERENCES Scaffalature(ID_Scaffalatura) ON DELETE CASCADE,
             UNIQUE (ID_Prodotto, Lotto)
         """,
-        # Gestione clienti e ordini
         "Clienti": """
             ID_Cliente INT PRIMARY KEY AUTO_INCREMENT,
             Nome VARCHAR(255) NOT NULL,
             Indirizzo VARCHAR(255),
             Telefono VARCHAR(20),
-            Email VARCHAR(255),
+            Email VARCHAR(255) UNIQUE,
             PartitaIVA VARCHAR(20) UNIQUE NOT NULL
         """,
         "Ordini": """
@@ -169,7 +172,6 @@ def init_tables(session):
             FOREIGN KEY (ID_Ordine) REFERENCES Ordini(ID_Ordine) ON DELETE CASCADE,
             FOREIGN KEY (ID_Lotto) REFERENCES Lotti(ID_Lotto) ON DELETE CASCADE
         """,
-        # Gestione baie di carico/scarico e sensori
         "BaieCaricoScarico": """
             ID_Baia INT PRIMARY KEY AUTO_INCREMENT,
             ZonaID INT NOT NULL,
@@ -183,16 +185,20 @@ def init_tables(session):
             ID_Sensore INT PRIMARY KEY AUTO_INCREMENT,
             Tipo ENUM('Presenza', 'Temperatura', 'Umidità') NOT NULL,
             ID_Zona INT,
-            Valore FLOAT,
-            DataLettura TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (ID_Zona) REFERENCES Zone(ID_Zona) ON DELETE SET NULL
+            """,
+        "LettureSensori": """
+            ID_Lettura INT PRIMARY KEY AUTO_INCREMENT,
+            ID_Sensore INT NOT NULL,
+            Valore FLOAT NOT NULL,
+            DataLettura TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (ID_Sensore) REFERENCES Sensori(ID_Sensore) ON DELETE CASCADE
         """,
-        # Gestione robot
         "StazioneRicarica": """
             ID_Ricarica INT PRIMARY KEY AUTO_INCREMENT,
             ZonaID INT NOT NULL,
             Nome VARCHAR(255) NOT NULL,
-            Stato ENUM('Libera', 'Occupata', 'Manutenzione') DEFAULT 'Libera',
+            Stato ENUM('Libera', 'Occupata', 'Inoperativa') DEFAULT 'Libera',
             FOREIGN KEY (ZonaID) REFERENCES Zone(ID_Zona) ON DELETE CASCADE,
             UNIQUE (ZonaID, Nome)
         """,
@@ -212,41 +218,37 @@ def init_tables(session):
         "RichiesteMovimento": """
             ID_Richiesta INT PRIMARY KEY AUTO_INCREMENT,
             ID_Lotto INT NOT NULL,
+            ID_Zona_Partenza INT NOT NULL,
             ID_Zona_Destinazione INT NOT NULL,
             ID_Scaffalatura_Destinazione INT NOT NULL,
-            Priorita INT DEFAULT 1,
-            Stato ENUM('In attesa', 'Assegnata', 'Completata', 'Annullata') DEFAULT 'In attesa',
             ID_Robot INT,
+            Priorita ENUM('Bassa', 'Media', 'Alta') DEFAULT 'Bassa',
             DataRichiesta TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            DataCompletamento TIMESTAMP,
             FOREIGN KEY (ID_Lotto) REFERENCES Lotti(ID_Lotto) ON DELETE CASCADE,
             FOREIGN KEY (ID_Robot) REFERENCES Robot(ID_Robot) ON DELETE SET NULL,
+            FOREIGN KEY (ID_Zona_Partenza) REFERENCES Zone(ID_Zona) ON DELETE CASCADE,
             FOREIGN KEY (ID_Zona_Destinazione) REFERENCES Zone(ID_Zona) ON DELETE CASCADE,
             FOREIGN KEY (ID_Scaffalatura_Destinazione) REFERENCES Scaffalature(ID_Scaffalatura) ON DELETE CASCADE
         """,
-        "StoricoMovimentiMagazzino": """
+        "DettagliMovimento": """
             ID_Movimento INT PRIMARY KEY AUTO_INCREMENT,
+            ID_Richiesta INT,
             ID_Lotto INT NOT NULL,
-            DataMovimento TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            TipoMovimento ENUM('Entrata', 'Uscita', 'Spostamento') NOT NULL,
-            Quantita INT,
+            ID_Robot INT,
             ID_Zona_Partenza INT,
-            ID_Zona_Arrivo INT,
-            FOREIGN KEY (ID_Lotto) REFERENCES Lotti(ID_Lotto) ON DELETE CASCADE,
-            FOREIGN KEY (ID_Zona_Partenza) REFERENCES Zone(ID_Zona) ON DELETE SET NULL,
-            FOREIGN KEY (ID_Zona_Arrivo) REFERENCES Zone(ID_Zona) ON DELETE SET NULL
-        """,
-        "ControlloQualitaMovimenti": """
-            ID_Controllo INT PRIMARY KEY AUTO_INCREMENT,
-            ID_Richiesta INT NOT NULL,
-            ID_Robot INT NOT NULL,
-            Esito ENUM('Successo', 'Fallimento') NOT NULL,
-            Note TEXT,
-            DataControllo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            ID_Zona_Destinazione INT,
+            ID_Scaffalatura_Destinazione INT,
+            Stato ENUM('Assegnato', 'In corso', 'Completato', 'Annullato') DEFAULT 'Assegnato',
+            DataMovimento TIMESTAMP,
+            DataCompletamento TIMESTAMP,
+            TipoMovimento ENUM('Entrata', 'Uscita', 'Spostamento') NOT NULL,
             FOREIGN KEY (ID_Richiesta) REFERENCES RichiesteMovimento(ID_Richiesta) ON DELETE CASCADE,
-            FOREIGN KEY (ID_Robot) REFERENCES Robot(ID_Robot) ON DELETE CASCADE
+            FOREIGN KEY (ID_Robot) REFERENCES Robot(ID_Robot) ON DELETE SET NULL,
+            FOREIGN KEY (ID_Scaffalatura_Destinazione) REFERENCES Scaffalature(ID_Scaffalatura) ON DELETE CASCADE,
+            FOREIGN KEY (ID_Lotto) REFERENCES Lotti(ID_Lotto) ON DELETE CASCADE,
+            FOREIGN KEY (ID_Zona_Partenza) REFERENCES Zone(ID_Zona) ON DELETE CASCADE,
+            FOREIGN KEY (ID_Zona_Destinazione) REFERENCES Zone(ID_Zona) ON DELETE CASCADE
         """,
-        # Gestione veicoli e consegne
         "Veicoli": """
             ID_Veicolo INT PRIMARY KEY AUTO_INCREMENT,
             Tipo ENUM('Bilico', 'Furgone', 'Carrello_Elevatore') NOT NULL,
@@ -263,12 +265,11 @@ def init_tables(session):
             FOREIGN KEY (ID_Ordine) REFERENCES Ordini(ID_Ordine) ON DELETE CASCADE,
             FOREIGN KEY (ID_Veicolo) REFERENCES Veicoli(ID_Veicolo) ON DELETE SET NULL
         """,
-        # Gestione manutenzione
         "ManutenzioneRobot": """
             ID_Manutenzione INT PRIMARY KEY AUTO_INCREMENT,
             ID_Robot INT NOT NULL,
             DataManutenzione DATE NOT NULL,
-            Tipo VARCHAR(255) NOT NULL,
+            Tipo ENUM('Ispezione', 'Riparazione', 'Sostituzione') NOT NULL,
             Stato ENUM('Programmata', 'Completata', 'Annullata') DEFAULT 'Programmata',
             Note TEXT,
             FOREIGN KEY (ID_Robot) REFERENCES Robot(ID_Robot) ON DELETE CASCADE
@@ -277,7 +278,7 @@ def init_tables(session):
             ID_Manutenzione INT PRIMARY KEY AUTO_INCREMENT,
             ID_Scaffalatura INT NOT NULL,
             DataManutenzione DATE NOT NULL,
-            Tipo VARCHAR(255) NOT NULL,
+            Tipo ENUM('Ispezione', 'Pulizia', 'Riparazione', 'Sostituzione') NOT NULL,
             Stato ENUM('Programmata', 'Completata', 'Annullata') DEFAULT 'Programmata',
             Note TEXT,
             FOREIGN KEY (ID_Scaffalatura) REFERENCES Scaffalature(ID_Scaffalatura) ON DELETE CASCADE
@@ -286,7 +287,7 @@ def init_tables(session):
             ID_Manutenzione INT PRIMARY KEY AUTO_INCREMENT,
             ID_Zona INT NOT NULL,
             DataManutenzione DATE NOT NULL,
-            Tipo VARCHAR(255) NOT NULL,
+            Tipo ENUM('Ispezione', 'Pulizia', 'Riparazione') NOT NULL,
             Stato ENUM('Programmata', 'Completata', 'Annullata') DEFAULT 'Programmata',
             Note TEXT,
             FOREIGN KEY (ID_Zona) REFERENCES Zone(ID_Zona) ON DELETE CASCADE
@@ -295,19 +296,18 @@ def init_tables(session):
             ID_Manutenzione INT PRIMARY KEY AUTO_INCREMENT,
             ID_Veicolo INT NOT NULL,
             DataManutenzione DATE NOT NULL,
-            Tipo VARCHAR(255) NOT NULL,
+            Tipo ENUM('Ispezione', 'Riparazione', 'Sostituzione') NOT NULL,
             Stato ENUM('Programmata', 'Completata', 'Annullata') DEFAULT 'Programmata',
             Note TEXT,
             FOREIGN KEY (ID_Veicolo) REFERENCES Veicoli(ID_Veicolo) ON DELETE CASCADE
         """,
-        # Gestione personale e accesso
         "Dipendenti": """
             ID_Dipendente VARCHAR(10) PRIMARY KEY,
             CodiceFiscale VARCHAR(16) NOT NULL UNIQUE,
             Nome VARCHAR(255) NOT NULL,
             Cognome VARCHAR(255) NOT NULL,
-            Ruolo ENUM('Amministratore', 'Operatore', 'Tecnico') NOT NULL,
-            Mansione ENUM('Amministratore', 'Tecnico', 'Manutenzione', 'Magazziniere', 'Responsabile Magazzino', 'Addetto Carico/Scarico', 'Operatore Logistico', 'Coordinatore Magazzino', 'Pianificatore', 'Controllo Qualità') NOT NULL,
+            Ruolo ENUM('Amministratore', 'Tecnico', 'Operatore') NOT NULL,
+            Mansione ENUM('Manager', 'Tecnico IT', 'Manutenzione', 'Magazziniere', 'Responsabile Magazzino', 'Addetto Carico/Scarico', 'Operatore Logistico', 'Coordinatore Magazzino', 'Pianificatore', 'Controllo Qualità') NOT NULL,
             DataAssunzione DATE
         """,
         "TurniDipendenti": """
@@ -326,21 +326,25 @@ def init_tables(session):
             ID_Dipendente VARCHAR(10),
             FOREIGN KEY (ID_Dipendente) REFERENCES Dipendenti(ID_Dipendente) ON DELETE SET NULL
         """,
-        "AccessiUtenti": """
-            ID_Accesso INT PRIMARY KEY AUTO_INCREMENT,
+        "LogUtenti": """
+            ID_LogUtente INT PRIMARY KEY AUTO_INCREMENT,
             ID_Utente INT NOT NULL,
             DataOra TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            Tipo ENUM('Accesso', 'Logout') NOT NULL,
             Esito ENUM('Successo', 'Fallito') NOT NULL,
             IP VARCHAR(255),
             FOREIGN KEY (ID_Utente) REFERENCES Credenziali(ID_Utente) ON DELETE CASCADE
         """,
-        "LogEventi": """
-            ID_Log INT PRIMARY KEY AUTO_INCREMENT,
+        "LogMagazzino": """
+            ID_LogMagazzino INT PRIMARY KEY AUTO_INCREMENT,
+            ID_Sensore INT,
+            ID_Lotto INT,
+            TipoNotifica ENUM('Avviso', 'Alarme') NOT NULL,
+            TipoEvento ENUM('Scadenza Lotto', 'Temperatura', 'Umidità') NOT NULL,
+            Messaggio TEXT,
             DataOra TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            ID_Utente INT,
-            Azione VARCHAR(255) NOT NULL,
-            Dettagli TEXT,
-            FOREIGN KEY (ID_Utente) REFERENCES Credenziali(ID_Utente) ON DELETE SET NULL
+            FOREIGN KEY (ID_Sensore) REFERENCES Sensori(ID_Sensore) ON DELETE CASCADE,
+            FOREIGN KEY (ID_Lotto) REFERENCES Lotti(ID_Lotto) ON DELETE CASCADE
         """,
     }
     for nome_tabella, definizione in tabelle.items():
@@ -395,16 +399,16 @@ def populateSQL():
             # Prodotti
             prodotti_table = metadata.tables["Prodotti"]
             prodotti_data = [
-                {"ID_Fornitore": 1, "Nome": "Pasta di Grano Duro", "Produttore": "Pastificio Italia", "Tipo": "Alimentare", "UnitaMisura": "kg"},
-                {"ID_Fornitore": 1, "Nome": "Olio Extra Vergine di Oliva", "Produttore": "Oleificio Sole", "Tipo": "Alimentare", "UnitaMisura": "l"},
-                {"ID_Fornitore": 2, "Nome": "Paracetamolo 500mg", "Produttore": "Farmaceutica ABC", "Tipo": "Farmaceutico", "UnitaMisura": "compresse"},
-                {"ID_Fornitore": 2, "Nome": "Aspirina 100mg", "Produttore": "Farmaceutica XYZ", "Tipo": "Farmaceutico", "UnitaMisura": "compresse"},
-                {"ID_Fornitore": 3, "Nome": "Biscotti Frollini", "Produttore": "Biscottificio Dolce", "Tipo": "Alimentare", "UnitaMisura": "kg"},
-                {"ID_Fornitore": 3, "Nome": "Sciroppo per la Tosse", "Produttore": "Farmaceutica ABC", "Tipo": "Farmaceutico", "UnitaMisura": "ml"},
-                {"ID_Fornitore": 4, "Nome": "Riso Carnaroli", "Produttore": "Riseria Bella", "Tipo": "Alimentare", "UnitaMisura": "kg"},
-                {"ID_Fornitore": 4, "Nome": "Vitamina C 1000mg", "Produttore": "Integratori Plus", "Tipo": "Farmaceutico", "UnitaMisura": "capsule"},
-                {"ID_Fornitore": 5, "Nome": "Caffè Macinato", "Produttore": "Caffè Aroma", "Tipo": "Alimentare", "UnitaMisura": "kg"},
-                {"ID_Fornitore": 5, "Nome": "Ibuprofene 400mg", "Produttore": "Farmaceutica XYZ", "Tipo": "Farmaceutico", "UnitaMisura": "compresse"}
+                {"ID_Fornitore": 1, "Nome": "Pasta di Grano Duro", "Produttore": "Pastificio Italia", "Tipo": "Alimentare", "QuantitàConfezione": 1.0, "UnitaMisura": "kg"},
+                {"ID_Fornitore": 1, "Nome": "Olio Extra Vergine di Oliva", "Produttore": "Oleificio Sole", "Tipo": "Alimentare", "QuantitàConfezione": 1.0, "UnitaMisura": "l"},
+                {"ID_Fornitore": 2, "Nome": "Paracetamolo 500mg", "Produttore": "Farmaceutica ABC", "Tipo": "Farmaceutico", "QuantitàConfezione": 20.0, "UnitaMisura": "compresse"},
+                {"ID_Fornitore": 2, "Nome": "Aspirina 100mg", "Produttore": "Farmaceutica XYZ", "Tipo": "Farmaceutico", "QuantitàConfezione": 30.0, "UnitaMisura": "compresse"},
+                {"ID_Fornitore": 3, "Nome": "Biscotti Frollini", "Produttore": "Biscottificio Dolce", "Tipo": "Alimentare", "QuantitàConfezione": 500, "UnitaMisura": "g"},
+                {"ID_Fornitore": 3, "Nome": "Sciroppo per la Tosse", "Produttore": "Farmaceutica ABC", "Tipo": "Farmaceutico", "QuantitàConfezione": 200.0, "UnitaMisura": "ml"},
+                {"ID_Fornitore": 4, "Nome": "Riso Carnaroli", "Produttore": "Riseria Bella", "Tipo": "Alimentare", "QuantitàConfezione": 1.0, "UnitaMisura": "kg"},
+                {"ID_Fornitore": 4, "Nome": "Vitamina C 1000mg", "Produttore": "Integratori Plus", "Tipo": "Farmaceutico", "QuantitàConfezione": 60.0, "UnitaMisura": "capsule"},
+                {"ID_Fornitore": 5, "Nome": "Caffè Macinato", "Produttore": "Caffè Aroma", "Tipo": "Alimentare", "QuantitàConfezione": 250.0, "UnitaMisura": "g"},
+                {"ID_Fornitore": 5, "Nome": "Ibuprofene 400mg", "Produttore": "Farmaceutica XYZ", "Tipo": "Farmaceutico", "QuantitàConfezione": 20.0, "UnitaMisura": "compresse"}
             ]
             try:
                 result = conn.execute(insert(prodotti_table).values(prodotti_data))
@@ -417,10 +421,10 @@ def populateSQL():
             # Zone
             zone_table = metadata.tables["Zone"]
             zone_data = [
-                {"Nome": "Stoccaggio Alimentari", "Tipo": "Stoccaggio_Alimentari", "Descrizione": "Zona di stoccaggio per prodotti alimentari"},
-                {"Nome": "Stoccaggio Farmaceutici", "Tipo": "Stoccaggio_Farmaceutici", "Descrizione": "Zona di stoccaggio per prodotti farmaceutici"},
-                {"Nome": "Baia di Carico", "Tipo": "Carico", "Descrizione": "Zona per il carico delle merci"},
-                {"Nome": "Baia di Scarico", "Tipo": "Scarico", "Descrizione": "Zona per lo scarico delle merci"}
+                {"Nome": "Stoccaggio A01", "Tipo": "Stoccaggio_Alimentari", "Descrizione": "Zona di stoccaggio per prodotti alimentari"},
+                {"Nome": "Stoccaggio F01", "Tipo": "Stoccaggio_Farmaceutici", "Descrizione": "Zona di stoccaggio per prodotti farmaceutici"},
+                {"Nome": "Baia Carico01", "Tipo": "Carico", "Descrizione": "Zona per il carico delle merci"},
+                {"Nome": "Baia Scarico01", "Tipo": "Scarico", "Descrizione": "Zona per lo scarico delle merci"}
             ]
             try:
                 result = conn.execute(insert(zone_table).values(zone_data))
@@ -433,12 +437,12 @@ def populateSQL():
             # Scaffalature
             scaffalature_table = metadata.tables["Scaffalature"]
             scaffalature_data = [
-                {"ID_Zona": 1, "Nome": "Scaffale A1", "Capacita": 100},
-                {"ID_Zona": 1, "Nome": "Scaffale A2", "Capacita": 80},
-                {"ID_Zona": 2, "Nome": "Scaffale B1", "Capacita": 150},
-                {"ID_Zona": 2, "Nome": "Scaffale B2", "Capacita": 120},
-                {"ID_Zona": 3, "Nome": "Scaffale C1", "Capacita": 50},
-                {"ID_Zona": 4, "Nome": "Scaffale D1", "Capacita": 60}
+                {"ID_Zona": 1, "Nome": "Scaffale A1", "CapacitàLotti": 100},
+                {"ID_Zona": 1, "Nome": "Scaffale A2", "CapacitàLotti": 80},
+                {"ID_Zona": 2, "Nome": "Scaffale B1", "CapacitàLotti": 150},
+                {"ID_Zona": 2, "Nome": "Scaffale B2", "CapacitàLotti": 120},
+                {"ID_Zona": 3, "Nome": "Scaffale C1", "CapacitàLotti": 50},
+                {"ID_Zona": 4, "Nome": "Scaffale D1", "CapacitàLotti": 60}
             ]
             try:
                 conn.execute(insert(scaffalature_table).values(scaffalature_data))
@@ -451,10 +455,16 @@ def populateSQL():
             # Lotti
             lotti_table = metadata.tables["Lotti"]
             lotti_data = [
-                {"ID_Prodotto": 1, "ID_Zona": 1, "ID_Scaffalatura": 1, "Lotto": "Lotto001", "Scadenza": "2024-12-31", "Quantita": 500, "PrezzoAcquisto": 1.50, "DataRicevimento": "2023-01-15", "Stato": "Disponibile"},
-                {"ID_Prodotto": 1, "ID_Zona": 1, "ID_Scaffalatura": 2, "Lotto": "Lotto002", "Scadenza": "2025-01-31", "Quantita": 300, "PrezzoAcquisto": 1.60, "DataRicevimento": "2023-02-20", "Stato": "Disponibile"},
-                {"ID_Prodotto": 2, "ID_Zona": 2, "ID_Scaffalatura": 3, "Lotto": "Lotto003", "Scadenza": "2024-06-30", "Quantita": 1000, "PrezzoAcquisto": 0.15, "DataRicevimento": "2023-03-25", "Stato": "Disponibile"},
-                {"ID_Prodotto": 2, "ID_Zona": 2, "ID_Scaffalatura": 4, "Lotto": "Lotto004", "Scadenza": "2024-07-31", "Quantita": 800, "PrezzoAcquisto": 0.20, "DataRicevimento": "2023-04-10", "Stato": "Disponibile"}
+                {"ID_Prodotto": 1, "ID_Fornitore": 1, "ID_Zona": 1, "ID_Scaffalatura": 1, "Lotto": "L001", "Scadenza": "2024-12-31", "QuantitàProdotto": 100, "PesoLotto": 100.0, "PrezzoAcquisto": 200.0, "ValoreLotto": 240.0, "DataRicevimento": "2023-01-01", "Stato": "Disponibile"},
+                {"ID_Prodotto": 2, "ID_Fornitore": 1, "ID_Zona": 1, "ID_Scaffalatura": 2, "Lotto": "L002", "Scadenza": "2024-11-30", "QuantitàProdotto": 200, "PesoLotto": 200.0, "PrezzoAcquisto": 1000.0, "ValoreLotto": 1200.0, "DataRicevimento": "2023-02-01", "Stato": "Disponibile"},
+                {"ID_Prodotto": 3, "ID_Fornitore": 2, "ID_Zona": 2, "ID_Scaffalatura": 3, "Lotto": "L003", "Scadenza": "2024-10-31", "QuantitàProdotto": 150, "PesoLotto": 3.0, "PrezzoAcquisto": 15.0, "ValoreLotto": 18.0, "DataRicevimento": "2023-03-01", "Stato": "Disponibile"},
+                {"ID_Prodotto": 4, "ID_Fornitore": 2, "ID_Zona": 2, "ID_Scaffalatura": 4, "Lotto": "L004", "Scadenza": "2024-09-30", "QuantitàProdotto": 120, "PesoLotto": 3.6, "PrezzoAcquisto": 6.0, "ValoreLotto": 7.2, "DataRicevimento": "2023-04-01", "Stato": "Disponibile"},
+                {"ID_Prodotto": 5, "ID_Fornitore": 3, "ID_Zona": 3, "ID_Scaffalatura": 5, "Lotto": "L005", "Scadenza": "2024-08-31", "QuantitàProdotto": 180, "PesoLotto": 90.0, "PrezzoAcquisto": 540.0, "ValoreLotto": 648.0, "DataRicevimento": "2023-05-01", "Stato": "Disponibile"},
+                {"ID_Prodotto": 6, "ID_Fornitore": 3, "ID_Zona": 3, "ID_Scaffalatura": 6, "Lotto": "L006", "Scadenza": "2024-07-31", "QuantitàProdotto": 160, "PesoLotto": 32.0, "PrezzoAcquisto": 320.0, "ValoreLotto": 384.0, "DataRicevimento": "2023-06-01", "Stato": "Disponibile"},
+                {"ID_Prodotto": 7, "ID_Fornitore": 4, "ID_Zona": 1, "ID_Scaffalatura": 1, "Lotto": "L007", "Scadenza": "2024-06-30", "QuantitàProdotto": 140, "PesoLotto": 140.0, "PrezzoAcquisto": 420.0, "ValoreLotto": 504.0, "DataRicevimento": "2023-07-01", "Stato": "Disponibile"},
+                {"ID_Prodotto": 8, "ID_Fornitore": 4, "ID_Zona": 1, "ID_Scaffalatura": 2, "Lotto": "L008", "Scadenza": "2024-05-31", "QuantitàProdotto": 130, "PesoLotto": 7.8, "PrezzoAcquisto": 156.0, "ValoreLotto": 187.2, "DataRicevimento": "2023-08-01", "Stato": "Disponibile"},
+                {"ID_Prodotto": 9, "ID_Fornitore": 5, "ID_Zona": 2, "ID_Scaffalatura": 3, "Lotto": "L009", "Scadenza": "2024-04-30", "QuantitàProdotto": 110, "PesoLotto": 27.5, "PrezzoAcquisto": 440.0, "ValoreLotto": 528.0, "DataRicevimento": "2023-09-01", "Stato": "Disponibile"},
+                {"ID_Prodotto": 10, "ID_Fornitore": 5, "ID_Zona": 2, "ID_Scaffalatura": 4, "Lotto": "L010", "Scadenza": "2024-03-31", "QuantitàProdotto": 170, "PesoLotto": 3.4, "PrezzoAcquisto": 25.5, "ValoreLotto": 30.6, "DataRicevimento": "2023-10-01", "Stato": "Disponibile"}
             ]
             try:
                 conn.execute(insert(lotti_table).values(lotti_data))
@@ -468,7 +478,10 @@ def populateSQL():
             clienti_table = metadata.tables["Clienti"]
             clienti_data = [
                 {"Nome": "Cliente X", "Indirizzo": "Via Verdi 10, Milano", "Telefono": "0212345679", "Email": "clienteX@email.com", "PartitaIVA": "IT11122233344"},
-                {"Nome": "Cliente Y", "Indirizzo": "Piazza Roma 20, Roma", "Telefono": "0698765433", "Email": "clienteY@email.com", "PartitaIVA": "IT55566677788"}
+                {"Nome": "Cliente Y", "Indirizzo": "Piazza Roma 20, Roma", "Telefono": "0698765433", "Email": "clienteY@email.com", "PartitaIVA": "IT55566677788"},
+                {"Nome": "Cliente Z", "Indirizzo": "Corso Italia 15, Napoli", "Telefono": "0812345678", "Email": "clienteZ@email.com", "PartitaIVA": "IT99988877766"},
+                {"Nome": "Cliente W", "Indirizzo": "Via Garibaldi 5, Torino", "Telefono": "0112345678", "Email": "clienteW@email.com", "PartitaIVA": "IT44433322211"},
+                {"Nome": "Cliente V", "Indirizzo": "Piazza Duomo 1, Firenze", "Telefono": "0552345678", "Email": "clienteV@email.com", "PartitaIVA": "IT33322211100"}
             ]
             try:
                 conn.execute(insert(clienti_table).values(clienti_data))
@@ -477,13 +490,12 @@ def populateSQL():
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento dei clienti: {e}")
-
             # Ordini
             ordini_table = metadata.tables["Ordini"]
             ordini_data = [
-                {"DataOrdine": "2023-10-27 10:00:00", "Tipo": "Entrata", "ID_Fornitore": 1, "ID_Cliente": None, "Stato": "Concluso"},
-                {"DataOrdine": "2023-10-28 11:30:00", "Tipo": "Uscita", "ID_Fornitore": None, "ID_Cliente": 1, "Stato": "Spedito"},
-                {"DataOrdine": "2023-10-29 12:00:00", "Tipo": "Entrata", "ID_Fornitore": 2, "ID_Cliente": None, "Stato": "Concluso"},
+                {"DataOrdine": "2023-10-25 09:00:00", "Tipo": "Entrata", "ID_Fornitore": 1, "ID_Cliente": None, "Stato": "In elaborazione"},
+                {"DataOrdine": "2023-10-26 10:00:00", "Tipo": "Uscita", "ID_Fornitore": None, "ID_Cliente": 1, "Stato": "Spedito"},
+                {"DataOrdine": "2023-10-27 11:00:00", "Tipo": "Entrata", "ID_Fornitore": 2, "ID_Cliente": None, "Stato": "Concluso"}
             ]
             try:
                 conn.execute(insert(ordini_table).values(ordini_data))
@@ -496,9 +508,9 @@ def populateSQL():
             # DettagliOrdini
             dettagli_ordini_table = metadata.tables["DettagliOrdini"]
             dettagli_ordini_data = [
-                {"ID_Ordine": 1, "ID_Lotto": 1, "Quantita": 200},
-                {"ID_Ordine": 1, "ID_Lotto": 2, "Quantita": 100},
-                {"ID_Ordine": 2, "ID_Lotto": 3, "Quantita": 500},
+                {"ID_Ordine": 1, "ID_Lotto": 1, "Quantita": 50},
+                {"ID_Ordine": 2, "ID_Lotto": 2, "Quantita": 100},
+                {"ID_Ordine": 3, "ID_Lotto": 3, "Quantita": 75}
             ]
             try:
                 conn.execute(insert(dettagli_ordini_table).values(dettagli_ordini_data))
@@ -507,12 +519,14 @@ def populateSQL():
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento dei dettagli ordini: {e}")
-
+                
             # BaieCaricoScarico
             baie_table = metadata.tables["BaieCaricoScarico"]
             baie_data = [
                 {"ZonaID": 3, "Nome": "Baia Carico 1", "Tipo": "Carico", "Stato": "Libera"},
+                {"ZonaID": 3, "Nome": "Baia Carico 2", "Tipo": "Carico", "Stato": "Libera"},
                 {"ZonaID": 4, "Nome": "Baia Scarico 1", "Tipo": "Scarico", "Stato": "Libera"},
+                {"ZonaID": 4, "Nome": "Baia Scarico 2", "Tipo": "Scarico", "Stato": "Libera"},
             ]
             try:
                 conn.execute(insert(baie_table).values(baie_data))
@@ -525,10 +539,21 @@ def populateSQL():
             # Sensori
             sensori_table = metadata.tables["Sensori"]
             sensori_data = [
-                {"Tipo": "Presenza", "ID_Zona": 1, "Valore": 1},
-                {"Tipo": "Temperatura", "ID_Zona": 1, "Valore": 25.5},
-                {"Tipo": "Umidità", "ID_Zona": 1, "Valore": 50.2},
+                {"Tipo": "Presenza", "ID_Zona": 1},
+                {"Tipo": "Temperatura", "ID_Zona": 1},
+                {"Tipo": "Umidità", "ID_Zona": 1},
+                {"Tipo": "Presenza", "ID_Zona": 2},
+                {"Tipo": "Temperatura", "ID_Zona": 2},
+                {"Tipo": "Umidità", "ID_Zona": 2},
+                {"Tipo": "Presenza", "ID_Zona": 3},
+                {"Tipo": "Temperatura", "ID_Zona": 3},
+                {"Tipo": "Umidità", "ID_Zona": 3},
+                {"Tipo": "Presenza", "ID_Zona": 4},
+                {"Tipo": "Temperatura", "ID_Zona": 4},
+                {"Tipo": "Umidità", "ID_Zona": 4},
+                
             ]
+
             try:
                 conn.execute(insert(sensori_table).values(sensori_data))
                 conn.commit()
@@ -537,10 +562,14 @@ def populateSQL():
                 conn.rollback()
                 print(f"Errore durante l'inserimento dei sensori: {e}")
 
+
             # StazioneRicarica
             stazione_ricarica_table = metadata.tables["StazioneRicarica"]
             stazioni_ricarica_data = [
                 {"ZonaID": 1, "Nome": "Stazione Ricarica 1", "Stato": "Libera"},
+                {"ZonaID": 2, "Nome": "Stazione Ricarica 2", "Stato": "Libera"},
+                {"ZonaID": 3, "Nome": "Stazione Ricarica 3", "Stato": "Libera"},
+                {"ZonaID": 4, "Nome": "Stazione Ricarica 4", "Stato": "Libera"}
             ]
             try:
                 conn.execute(insert(stazione_ricarica_table).values(stazioni_ricarica_data))
@@ -554,7 +583,11 @@ def populateSQL():
             robot_table = metadata.tables["Robot"]
             robot_data = [
                 {"ID_Sensore": 1, "ID_Zona": 1, "Nome": "Robot A", "Stato": "Disponibile", "PosizioneAttuale": "Scaffale A1", "Capacita": 100, "ID_Ricarica": 1},
-                {"ID_Sensore": 2, "ID_Zona": 1, "Nome": "Robot B", "Stato": "Disponibile", "PosizioneAttuale": "Scaffale A2", "Capacita": 120, "ID_Ricarica": 1},
+                {"ID_Sensore": 1, "ID_Zona": 1, "Nome": "Robot B", "Stato": "Disponibile", "PosizioneAttuale": "Scaffale A2", "Capacita": 120, "ID_Ricarica": 1},
+                {"ID_Sensore": 4, "ID_Zona": 2, "Nome": "Robot C", "Stato": "Disponibile", "PosizioneAttuale": "Scaffale B1", "Capacita": 150, "ID_Ricarica": 2},
+                {"ID_Sensore": 4, "ID_Zona": 2, "Nome": "Robot D", "Stato": "Disponibile", "PosizioneAttuale": "Scaffale B2", "Capacita": 130, "ID_Ricarica": 2},
+                {"ID_Sensore": 7, "ID_Zona": 3, "Nome": "Robot E", "Stato": "Disponibile", "PosizioneAttuale": "Scaffale C1", "Capacita": 110, "ID_Ricarica": 3},
+                {"ID_Sensore": 10, "ID_Zona": 4, "Nome": "Robot F", "Stato": "Disponibile", "PosizioneAttuale": "Scaffale D1", "Capacita": 140, "ID_Ricarica": 4}
             ]
             try:
                 conn.execute(insert(robot_table).values(robot_data))
@@ -567,7 +600,11 @@ def populateSQL():
             # RichiesteMovimento
             richieste_table = metadata.tables["RichiesteMovimento"]
             richieste_data = [
-                {"ID_Lotto": 1, "ID_Zona_Destinazione": 2, "ID_Scaffalatura_Destinazione": 1, "Priorita": 1, "Stato": "Completata", "ID_Robot": 1, "DataRichiesta": "2023-10-27 10:00:00", "DataCompletamento": "2023-10-27 10:15:00"},
+                {"ID_Lotto": 1, "ID_Zona_Partenza": 1, "ID_Zona_Destinazione": 2, "ID_Scaffalatura_Destinazione": 1, "ID_Robot": 1, "Priorita": "Alta", "DataRichiesta": "2023-10-27 10:00:00"},
+                {"ID_Lotto": 2, "ID_Zona_Partenza": 1, "ID_Zona_Destinazione": 3, "ID_Scaffalatura_Destinazione": 2, "ID_Robot": 2, "Priorita": "Media", "DataRichiesta": "2023-10-28 11:00:00"},
+                {"ID_Lotto": 3, "ID_Zona_Partenza": 2, "ID_Zona_Destinazione": 4, "ID_Scaffalatura_Destinazione": 3, "ID_Robot": 2, "Priorita": "Bassa", "DataRichiesta": "2023-10-29 12:00:00"},
+                {"ID_Lotto": 4, "ID_Zona_Partenza": 3, "ID_Zona_Destinazione": 1, "ID_Scaffalatura_Destinazione": 4, "ID_Robot": 3, "Priorita": "Alta", "DataRichiesta": "2023-10-30 13:00:00"},
+                {"ID_Lotto": 5, "ID_Zona_Partenza": 4, "ID_Zona_Destinazione": 2, "ID_Scaffalatura_Destinazione": 1, "ID_Robot": 4, "Priorita": "Media", "DataRichiesta": "2023-10-31 14:00:00"}
             ]
             try:
                 conn.execute(insert(richieste_table).values(richieste_data))
@@ -577,31 +614,23 @@ def populateSQL():
                 conn.rollback()
                 print(f"Errore durante l'inserimento delle richieste di movimento: {e}")
 
-            # StoricoMovimentiMagazzino
-            storico_table = metadata.tables["StoricoMovimentiMagazzino"]
-            storico_data = [
-                {"ID_Lotto": 1, "DataMovimento": "2023-10-27 10:15:00", "TipoMovimento": "Spostamento", "Quantita": 200, "ID_Zona_Partenza": 1, "ID_Zona_Arrivo": 2},
+            # DettagliMovimento
+            dettagli_movimento_table = metadata.tables["DettagliMovimento"]
+            dettagli_movimento_data = [
+                {"ID_Richiesta": 1, "ID_Lotto": 1, "ID_Robot": 1, "ID_Zona_Partenza": 1, "ID_Zona_Destinazione": 2, "ID_Scaffalatura_Destinazione": 1, "Stato": "Completato", "DataMovimento": "2023-10-27 10:00:00", "DataCompletamento": "2023-10-27 10:15:00", "TipoMovimento": "Spostamento"},
+                {"ID_Richiesta": 2, "ID_Lotto": 2, "ID_Robot": 2, "ID_Zona_Partenza": 1, "ID_Zona_Destinazione": 3, "ID_Scaffalatura_Destinazione": 2, "Stato": "In corso", "DataMovimento": "2023-10-28 11:00:00", "DataCompletamento": None, "TipoMovimento": "Spostamento"},
+                {"ID_Richiesta": 3, "ID_Lotto": 3, "ID_Robot": 2, "ID_Zona_Partenza": 2, "ID_Zona_Destinazione": 4, "ID_Scaffalatura_Destinazione": 3, "Stato": "Assegnato", "DataMovimento": "2023-10-29 12:00:00", "DataCompletamento": None, "TipoMovimento": "Spostamento"},
+                {"ID_Richiesta": 4, "ID_Lotto": 4, "ID_Robot": 3, "ID_Zona_Partenza": 2, "ID_Zona_Destinazione": 1, "ID_Scaffalatura_Destinazione": 2, "Stato": "Completato", "DataMovimento": "2023-11-01 09:00:00", "DataCompletamento": "2023-11-01 09:30:00", "TipoMovimento": "Entrata"},
+                {"ID_Richiesta": 5, "ID_Lotto": 5, "ID_Robot": 4, "ID_Zona_Partenza": 4, "ID_Zona_Destinazione": 2, "ID_Scaffalatura_Destinazione": 3, "Stato": "In corso", "DataMovimento": "2023-11-02 10:00:00", "DataCompletamento": None, "TipoMovimento": "Uscita"}
             ]
-            try:
-                conn.execute(insert(storico_table).values(storico_data))
-                conn.commit()
-                print(f"Inseriti {len(storico_data)} movimenti storici.")
-            except Exception as e:
-                conn.rollback()
-                print(f"Errore durante l'inserimento dello storico movimenti: {e}")
 
-            # ControlloQualitaMovimenti
-            controllo_table = metadata.tables["ControlloQualitaMovimenti"]
-            controllo_data = [
-                {"ID_Richiesta": 1, "ID_Robot": 1, "Esito": "Successo", "Note": "Controllo ok", "DataControllo": "2023-10-27 10:15:00"},
-            ]
             try:
-                conn.execute(insert(controllo_table).values(controllo_data))
+                conn.execute(insert(dettagli_movimento_table).values(dettagli_movimento_data))
                 conn.commit()
-                print(f"Inseriti {len(controllo_data)} controlli qualità.")
+                print(f"Inseriti {len(dettagli_movimento_data)} dettagli movimento.")
             except Exception as e:
                 conn.rollback()
-                print(f"Errore durante l'inserimento dei controlli qualità: {e}")
+                print(f"Errore durante l'inserimento dei dettagli movimento: {e}")
 
             # Veicoli
             veicoli_table = metadata.tables["Veicoli"]
@@ -621,8 +650,9 @@ def populateSQL():
             # Consegne
             consegne_table = metadata.tables["Consegne"]
             consegne_data = [
-                {"ID_Ordine": 2, "ID_Veicolo": 1, "DataConsegna": "2023-10-28", "Stato": "Completata"},
-                {"ID_Ordine": 3, "ID_Veicolo": 2, "DataConsegna": "2023-10-30", "Stato": "In corso"}
+                {"ID_Ordine": 1, "ID_Veicolo": 1, "DataConsegna": "2023-10-28", "Stato": "Completata"},
+                {"ID_Ordine": 2, "ID_Veicolo": 2, "DataConsegna": "2023-10-30", "Stato": "In corso"},
+                {"ID_Ordine": 3, "ID_Veicolo": 3, "DataConsegna": "2023-11-01", "Stato": "Pianificata"}
             ]
             try:
                 conn.execute(insert(consegne_table).values(consegne_data))
@@ -635,8 +665,9 @@ def populateSQL():
             # ManutenzioneRobot
             manutenzione_robot_table = metadata.tables["ManutenzioneRobot"]
             manutenzione_robot_data = [
-                {"ID_Robot": 1, "DataManutenzione": "2023-11-10", "Tipo": "Ordinaria", "Stato": "Programmata", "Note": "Controllo generale"},
-                {"ID_Robot": 2, "DataManutenzione": "2023-11-15", "Tipo": "Straordinaria", "Stato": "Programmata", "Note": "Sostituzione batteria"}
+                {"ID_Robot": 1, "DataManutenzione": "2023-11-10", "Tipo": "Ispezione", "Stato": "Programmata", "Note": "Controllo generale"},
+                {"ID_Robot": 2, "DataManutenzione": "2023-11-15", "Tipo": "Riparazione", "Stato": "Programmata", "Note": "Sostituzione batteria"},
+                {"ID_Robot": 3, "DataManutenzione": "2023-11-20", "Tipo": "Sostituzione", "Stato": "Programmata", "Note": "Sostituzione motore"}
             ]
             try:
                 conn.execute(insert(manutenzione_robot_table).values(manutenzione_robot_data))
@@ -649,8 +680,9 @@ def populateSQL():
             # ManutenzioneScaffalature
             manutenzione_scaffalature_table = metadata.tables["ManutenzioneScaffalature"]
             manutenzione_scaffalature_data = [
-                {"ID_Scaffalatura": 1, "DataManutenzione": "2023-11-05", "Tipo": "Controllo", "Stato": "Programmata", "Note": "Verifica Bulloneria"},
-                {"ID_Scaffalatura": 2, "DataManutenzione": "2023-11-08", "Tipo": "Riparazione", "Stato": "Programmata", "Note": "Sostituzione mensole"}
+                {"ID_Scaffalatura": 1, "DataManutenzione": "2023-11-05", "Tipo": "Ispezione", "Stato": "Programmata", "Note": "Verifica Bulloneria"},
+                {"ID_Scaffalatura": 2, "DataManutenzione": "2023-11-08", "Tipo": "Riparazione", "Stato": "Programmata", "Note": "Sostituzione mensole"},
+                {"ID_Scaffalatura": 3, "DataManutenzione": "2023-11-12", "Tipo": "Pulizia", "Stato": "Programmata", "Note": "Pulizia generale"}
             ]
             try:
                 conn.execute(insert(manutenzione_scaffalature_table).values(manutenzione_scaffalature_data))
@@ -664,7 +696,8 @@ def populateSQL():
             manutenzione_zone_table = metadata.tables["ManutenzioneZone"]
             manutenzione_zone_data = [
                 {"ID_Zona": 1, "DataManutenzione": "2023-11-20", "Tipo": "Pulizia", "Stato": "Programmata", "Note": "Pulizia e sanificazione"},
-                {"ID_Zona": 2, "DataManutenzione": "2023-11-25", "Tipo": "Riparazione", "Stato": "Programmata", "Note": "Riparazione illuminazione"}
+                {"ID_Zona": 2, "DataManutenzione": "2023-11-25", "Tipo": "Riparazione", "Stato": "Programmata", "Note": "Riparazione illuminazione"},
+                {"ID_Zona": 3, "DataManutenzione": "2023-11-30", "Tipo": "Ispezione", "Stato": "Programmata", "Note": "Ispezione generale"}
             ]
             try:
                 conn.execute(insert(manutenzione_zone_table).values(manutenzione_zone_data))
@@ -677,8 +710,9 @@ def populateSQL():
             # ManutenzioneVeicoli
             manutenzione_veicoli_table = metadata.tables["ManutenzioneVeicoli"]
             manutenzione_veicoli_data = [
-                {"ID_Veicolo": 1, "DataManutenzione": "2023-11-12", "Tipo": "Controllo", "Stato": "Programmata", "Note": "Controllo freni e livelli"},
-                {"ID_Veicolo": 2, "DataManutenzione": "2023-11-18", "Tipo": "Riparazione", "Stato": "Programmata", "Note": "Sostituzione pneumatici"}
+                {"ID_Veicolo": 1, "DataManutenzione": "2023-11-12", "Tipo": "Ispezione", "Stato": "Programmata", "Note": "Controllo freni e livelli"},
+                {"ID_Veicolo": 2, "DataManutenzione": "2023-11-18", "Tipo": "Riparazione", "Stato": "Programmata", "Note": "Sostituzione pneumatici"},
+                {"ID_Veicolo": 3, "DataManutenzione": "2023-11-22", "Tipo": "Sostituzione", "Stato": "Programmata", "Note": "Sostituzione batteria"}
             ]
             try:
                 conn.execute(insert(manutenzione_veicoli_table).values(manutenzione_veicoli_data))
@@ -689,11 +723,15 @@ def populateSQL():
                 print(f"Errore durante l'inserimento delle manutenzioni veicoli: {e}")
 
             # Dipendenti
+            import MagUtils
+            id1= MagUtils.create_employee_id("RSSMRA80A01H501R", "Mario", "Rossi", "Amministratore", "2020-01-01")
+            id2= MagUtils.create_employee_id("GLLGNN90B02H501Z", "Giovanni", "Gialli", "Operatore", "2021-02-01")
+            id3= MagUtils.create_employee_id("VRDBRT85C03H501X", "Roberto", "Verdi", "Tecnico", "2022-03-01")
             dipendenti_table = metadata.tables["Dipendenti"]
             dipendenti_data = [
-                {"ID_Dipendente": "ADM001", "CodiceFiscale": "RSSMRA80A01H501R", "Nome": "Mario", "Cognome": "Rossi", "Ruolo": "Amministratore", "Mansione": "Amministratore", "DataAssunzione": "2020-01-01"},
-                {"ID_Dipendente": "OPR001", "CodiceFiscale": "GLLGNN90B02H501Z", "Nome": "Giovanni", "Cognome": "Gialli", "Ruolo": "Operatore", "Mansione": "Magazziniere", "DataAssunzione": "2021-02-01"},
-                {"ID_Dipendente": "TEC001", "CodiceFiscale": "VRDBRT85C03H501X", "Nome": "Roberto", "Cognome": "Verdi", "Ruolo": "Tecnico", "Mansione": "Manutenzione", "DataAssunzione": "2022-03-01"}
+                {"ID_Dipendente": id1, "CodiceFiscale": "RSSMRA80A01H501R", "Nome": "Mario", "Cognome": "Rossi", "Ruolo": "Amministratore", "Mansione": "Manager", "DataAssunzione": "2020-01-01"},
+                {"ID_Dipendente": id2, "CodiceFiscale": "GLLGNN90B02H501Z", "Nome": "Giovanni", "Cognome": "Gialli", "Ruolo": "Operatore", "Mansione": "Magazziniere", "DataAssunzione": "2021-02-01"},
+                {"ID_Dipendente": id3, "CodiceFiscale": "VRDBRT85C03H501X", "Nome": "Roberto", "Cognome": "Verdi", "Ruolo": "Operatore", "Mansione": "Manutenzione", "DataAssunzione": "2022-03-01"}
             ]
             try:
                 conn.execute(insert(dipendenti_table).values(dipendenti_data))
@@ -704,11 +742,15 @@ def populateSQL():
                 print(f"Errore durante l'inserimento dei dipendenti: {e}")
 
             # TurniDipendenti
+            import MagUtils
+            id1= MagUtils.create_employee_id("RSSMRA80A01H501R", "Mario", "Rossi", "Amministratore", "2020-01-01")
+            id2= MagUtils.create_employee_id("GLLGNN90B02H501Z", "Giovanni", "Gialli", "Operatore", "2021-02-01")
+            id3= MagUtils.create_employee_id("VRDBRT85C03H501X", "Roberto", "Verdi", "Tecnico", "2022-03-01")
             turni_table = metadata.tables["TurniDipendenti"]
             turni_data = [
-                {"ID_Dipendente": "ADM001", "DataInizio": "2023-10-27 09:00:00", "DataFine": "2023-10-27 18:00:00", "Mansione": "Amministratore"},
-                {"ID_Dipendente": "OPR001", "DataInizio": "2023-10-27 08:00:00", "DataFine": "2023-10-27 16:00:00", "Mansione": "Magazziniere"},
-                {"ID_Dipendente": "TEC001", "DataInizio": "2023-10-27 09:00:00", "DataFine": "2023-10-27 17:00:00", "Mansione": "Manutenzione"}
+                {"ID_Dipendente": id1 , "DataInizio": "2023-10-27 09:00:00", "DataFine": "2023-10-27 18:00:00", "Mansione": "Manager"},
+                {"ID_Dipendente": id2, "DataInizio": "2023-10-27 08:00:00", "DataFine": "2023-10-27 16:00:00", "Mansione": "Magazziniere"},
+                {"ID_Dipendente": id3, "DataInizio": "2023-10-27 09:00:00", "DataFine": "2023-10-27 17:00:00", "Mansione": "Manutenzione"}
             ]
             try:
                 conn.execute(insert(turni_table).values(turni_data))

@@ -1,19 +1,10 @@
-import hashlib
+
 import pandas as pd
 import streamlit as st
 import time
 from utils.MagDBcontroller import connessione, select_recordsSQL, add_recordSQL, update_recordSQL, delete_recordSQL
+from utils.MagUtils import create_employee_id
 from streamlit_extras.switch_page_button import switch_page
-
-# Funzione per creare un ID dipendente univoco
-def create_employee_id(codicefiscale, nome, cognome, ruolo, dataassunzione):
-    """
-    Crea un ID dipendente unico dato il codice fiscale, nome, cognome, ruolo e data di assunzione.
-    """
-    concatenated_string = f"{codicefiscale}{nome}{cognome}{ruolo}{dataassunzione}"
-    hashed_string = hashlib.sha256(concatenated_string.encode()).hexdigest()
-    employee_id = hashed_string[:10]
-    return employee_id
 
 # Verifica autenticazione
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
@@ -173,8 +164,8 @@ if st.session_state.get("show_form_update", False):
         codicefiscale = st.text_input("Codice Fiscale", max_chars=16)
         nome = st.text_input("Nome")
         cognome = st.text_input("Cognome")
-        ruolo = st.selectbox("Ruolo", options=["Amministratore", "Operatore", "Tecnico"])
-        mansione = st.selectbox("Mansione", options=["Amministratore", "Tecnico", "Manutenzione", "Magazziniere", "Responsabile Magazzino", "Addetto Carico/Scarico", "Operatore Logistico", "Coordinatore Magazzino", "Pianificatore", "Controllo Qualità"])
+        ruolo = st.selectbox("Ruolo", options=["Amministratore", "Tecnico", "Operaio"])
+        mansione = st.selectbox("Mansione", options=["Manager", "Tecnico IT", "Manutenzione", "Magazziniere", "Responsabile Magazzino", "Addetto Carico/Scarico", "Operatore Logistico", "Coordinatore Magazzino", "Pianificatore", "Controllo Qualità"])
         dataassunzione = st.date_input("Data di Assunzione")
         
         # Crea il bottone per inviare il form
