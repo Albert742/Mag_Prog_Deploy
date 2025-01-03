@@ -9,15 +9,19 @@ def warehouse_dashboard_home():
         st.sidebar.write("Utente Guest.")
         if st.sidebar.button("Log In"):
            switch_page("Login")
+    elif st.sidebar.button("Log Out"):
+        st.success("Logout effettuato con successo. Verrai reindirizzato alla pagina di login.")
+        time.sleep(2)
+        switch_page("Login")
+        st.session_state.clear()
+        st.rerun()
     else:
         st.sidebar.write(f"Logged in as: {st.session_state.get('username', 'Unknown')}")
-    
 
     st.sidebar.page_link('Home.py', label='Home')
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
     st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
     st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
-    st.sidebar.page_link('pages/test.py', label='test')
     
     # Contenuto della pagina
     st.image("logo.jpg", use_container_width=True)
@@ -55,12 +59,6 @@ def warehouse_dashboard_home():
         "Consiglio: Segna questo pagina come preferita per accedere rapidamente alla pagina.",
         icon="🔖",
     )
-    if st.sidebar.button("Log Out"):
-        st.success("Logout effettuato con successo. Verrai reindirizzato alla pagina di login.")
-        time.sleep(2)
-        switch_page("Login")
-        st.session_state.clear()
-        st.rerun()
 
 if __name__ == "__main__":
     warehouse_dashboard_home()

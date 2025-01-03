@@ -4,4 +4,4 @@ streamlit-extras
 sqlalchemy
 pymysql
 pandas
-flask
+plotly

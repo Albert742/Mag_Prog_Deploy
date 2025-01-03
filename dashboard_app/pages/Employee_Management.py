@@ -179,14 +179,14 @@ if st.session_state.get("show_form_update", False):
                     st.success("Dipendente aggiornato con successo!")
                     time.sleep(2)
                     st.session_state.show_form_update = False
-                    st.rerun()  # Ricarica la pagina per visualizzare l'aggiornamento
+                    st.rerun()
                 else:
                     st.error("Errore durante l'aggiornamento del dipendente.")
             else:
                 st.error("Tutti i campi sono obbligatori.")
         elif cancel_button:
             st.session_state.show_form_update = False
-            st.rerun()  # Ricarica la pagina per nascondere il form
+            st.rerun()
 
 # Sezione per eliminare un dipendente
 if st.session_state.get("show_form_delete", False):
