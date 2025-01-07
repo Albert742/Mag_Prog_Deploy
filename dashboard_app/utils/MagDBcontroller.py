@@ -191,6 +191,7 @@ def init_tables(session):
         "LettureSensori": """
             ID_Lettura INT PRIMARY KEY AUTO_INCREMENT,
             ID_Sensore INT NOT NULL,
+            Tipo ENUM('Temperatura', 'Umidità', 'Presenza') NOT NULL,
             Valore FLOAT NOT NULL,
             DataLettura TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (ID_Sensore) REFERENCES Sensori(ID_Sensore) ON DELETE CASCADE
@@ -329,10 +330,11 @@ def init_tables(session):
         """,
         "LogUtenti": """
             ID_LogUtente INT PRIMARY KEY AUTO_INCREMENT,
-            ID_Utente INT NOT NULL,
+            ID_Utente INT,
             DataOra TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            Tipo ENUM('Accesso', 'Logout') NOT NULL,
+            Tipo ENUM('Accesso', 'Registrazione', 'Logout') NOT NULL,
             Esito ENUM('Successo', 'Fallito') NOT NULL,
+            Dettagli VARCHAR(255),
             IP VARCHAR(255),
             FOREIGN KEY (ID_Utente) REFERENCES Credenziali(ID_Utente) ON DELETE CASCADE
         """,
@@ -379,9 +381,19 @@ def populateSQL():
         if conn:
             metadata = MetaData()
             metadata.reflect(bind=conn.bind)  # Reflect the database schema
-
+            def get_table(metadata, table_name):
+                # Try to get the table with the exact name
+                table = metadata.tables.get(table_name)
+                if table is None:
+                    # If not found, try to get the table with the lowercase name
+                    table = metadata.tables.get(table_name.lower())
+                if table is None:
+                    # If still not found, try to get the table with the uppercase name
+                    table = metadata.tables.get(table_name.upper())
+                return table
+            
             # Fornitori
-            fornitori_table = metadata.tables["Fornitori"]
+            fornitori_table = get_table(metadata, "Fornitori")
             fornitori_data = [
                 {"Nome": "Fornitore A", "Indirizzo": "Via Roma 1, Milano", "Telefono": "0212345678", "Email": "fornitoreA@email.com", "PartitaIVA": "IT12345678901"},
                 {"Nome": "Fornitore B", "Indirizzo": "Corso Italia 2, Roma", "Telefono": "0698765432", "Email": "fornitoreB@email.com", "PartitaIVA": "IT98765432109"},
@@ -398,7 +410,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento dei fornitori: {e}")
 
             # Prodotti
-            prodotti_table = metadata.tables["Prodotti"]
+            prodotti_table = get_table(metadata, "Prodotti")
             prodotti_data = [
                 {"ID_Fornitore": 1, "Nome": "Pasta di Grano Duro", "Produttore": "Pastificio Italia", "Tipo": "Alimentare", "QuantitàConfezione": 1.0, "UnitaMisura": "kg"},
                 {"ID_Fornitore": 1, "Nome": "Olio Extra Vergine di Oliva", "Produttore": "Oleificio Sole", "Tipo": "Alimentare", "QuantitàConfezione": 1.0, "UnitaMisura": "l"},
@@ -420,7 +432,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento dei prodotti: {e}")
 
             # Zone
-            zone_table = metadata.tables["Zone"]
+            zone_table = get_table(metadata, "Zone")
             zone_data = [
                 {"Nome": "Stoccaggio A01", "Tipo": "Stoccaggio_Alimentari", "Descrizione": "Zona di stoccaggio per prodotti alimentari"},
                 {"Nome": "Stoccaggio F01", "Tipo": "Stoccaggio_Farmaceutici", "Descrizione": "Zona di stoccaggio per prodotti farmaceutici"},
@@ -436,7 +448,7 @@ def populateSQL():
                 print(f"Errore durante l'inserimento delle zone: {e}")
                 
             # Scaffalature
-            scaffalature_table = metadata.tables["Scaffalature"]
+            scaffalature_table = get_table(metadata, "Scaffalature")
             scaffalature_data = [
                 {"ID_Zona": 1, "Nome": "Scaffale A1", "CapacitàLotti": 100},
                 {"ID_Zona": 1, "Nome": "Scaffale A2", "CapacitàLotti": 80},
@@ -446,37 +458,36 @@ def populateSQL():
                 {"ID_Zona": 4, "Nome": "Scaffale D1", "CapacitàLotti": 60}
             ]
             try:
-                conn.execute(insert(scaffalature_table).values(scaffalature_data))
+                result = conn.execute(insert(scaffalature_table).values(scaffalature_data))
                 conn.commit()
-                print(f"Inserite {len(scaffalature_data)} scaffalature.")
+                print(f"Inserite {result.rowcount} scaffalature.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento delle scaffalature: {e}")
 
             # Lotti
-            lotti_table = metadata.tables["Lotti"]
+            lotti_table = get_table(metadata, "Lotti")
             lotti_data = [
-                {"ID_Prodotto": 1, "ID_Fornitore": 1, "ID_Zona": 1, "ID_Scaffalatura": 1, "Lotto": "L001", "Scadenza": "2024-12-31", "QuantitàProdotto": 100, "PesoLotto": 100.0, "PrezzoAcquisto": 200.0, "ValoreLotto": 240.0, "DataRicevimento": "2023-01-01", "Stato": "Disponibile"},
-                {"ID_Prodotto": 2, "ID_Fornitore": 1, "ID_Zona": 1, "ID_Scaffalatura": 2, "Lotto": "L002", "Scadenza": "2024-11-30", "QuantitàProdotto": 200, "PesoLotto": 200.0, "PrezzoAcquisto": 1000.0, "ValoreLotto": 1200.0, "DataRicevimento": "2023-02-01", "Stato": "Disponibile"},
-                {"ID_Prodotto": 3, "ID_Fornitore": 2, "ID_Zona": 2, "ID_Scaffalatura": 3, "Lotto": "L003", "Scadenza": "2024-10-31", "QuantitàProdotto": 150, "PesoLotto": 3.0, "PrezzoAcquisto": 15.0, "ValoreLotto": 18.0, "DataRicevimento": "2023-03-01", "Stato": "Disponibile"},
-                {"ID_Prodotto": 4, "ID_Fornitore": 2, "ID_Zona": 2, "ID_Scaffalatura": 4, "Lotto": "L004", "Scadenza": "2024-09-30", "QuantitàProdotto": 120, "PesoLotto": 3.6, "PrezzoAcquisto": 6.0, "ValoreLotto": 7.2, "DataRicevimento": "2023-04-01", "Stato": "Disponibile"},
-                {"ID_Prodotto": 5, "ID_Fornitore": 3, "ID_Zona": 3, "ID_Scaffalatura": 5, "Lotto": "L005", "Scadenza": "2024-08-31", "QuantitàProdotto": 180, "PesoLotto": 90.0, "PrezzoAcquisto": 540.0, "ValoreLotto": 648.0, "DataRicevimento": "2023-05-01", "Stato": "Disponibile"},
-                {"ID_Prodotto": 6, "ID_Fornitore": 3, "ID_Zona": 3, "ID_Scaffalatura": 6, "Lotto": "L006", "Scadenza": "2024-07-31", "QuantitàProdotto": 160, "PesoLotto": 32.0, "PrezzoAcquisto": 320.0, "ValoreLotto": 384.0, "DataRicevimento": "2023-06-01", "Stato": "Disponibile"},
-                {"ID_Prodotto": 7, "ID_Fornitore": 4, "ID_Zona": 1, "ID_Scaffalatura": 1, "Lotto": "L007", "Scadenza": "2024-06-30", "QuantitàProdotto": 140, "PesoLotto": 140.0, "PrezzoAcquisto": 420.0, "ValoreLotto": 504.0, "DataRicevimento": "2023-07-01", "Stato": "Disponibile"},
-                {"ID_Prodotto": 8, "ID_Fornitore": 4, "ID_Zona": 1, "ID_Scaffalatura": 2, "Lotto": "L008", "Scadenza": "2024-05-31", "QuantitàProdotto": 130, "PesoLotto": 7.8, "PrezzoAcquisto": 156.0, "ValoreLotto": 187.2, "DataRicevimento": "2023-08-01", "Stato": "Disponibile"},
-                {"ID_Prodotto": 9, "ID_Fornitore": 5, "ID_Zona": 2, "ID_Scaffalatura": 3, "Lotto": "L009", "Scadenza": "2024-04-30", "QuantitàProdotto": 110, "PesoLotto": 27.5, "PrezzoAcquisto": 440.0, "ValoreLotto": 528.0, "DataRicevimento": "2023-09-01", "Stato": "Disponibile"},
-                {"ID_Prodotto": 10, "ID_Fornitore": 5, "ID_Zona": 2, "ID_Scaffalatura": 4, "Lotto": "L010", "Scadenza": "2024-03-31", "QuantitàProdotto": 170, "PesoLotto": 3.4, "PrezzoAcquisto": 25.5, "ValoreLotto": 30.6, "DataRicevimento": "2023-10-01", "Stato": "Disponibile"}
+                {"ID_Prodotto": 1, "ID_Fornitore": 1, "ID_Zona": 1, "ID_Scaffalatura": 1, "Lotto": "L001", "Scadenza": "2024-12-31", "QuantitàProdotto": 100, "PesoLotto": 100.0, "PrezzoAcquisto": 200.0, "ValoreLotto": 240.0, "DataRicevimento": "2023-01-01", "DataPrenotazione": "2022-12-15", "Stato": "Disponibile"},
+                {"ID_Prodotto": 2, "ID_Fornitore": 1, "ID_Zona": 1, "ID_Scaffalatura": 2, "Lotto": "L002", "Scadenza": "2024-11-30", "QuantitàProdotto": 150, "PesoLotto": 150.0, "PrezzoAcquisto": 750.0, "ValoreLotto": 900.0, "DataRicevimento": "2023-02-15", "DataPrenotazione": "2023-02-01", "Stato": "Disponibile"},
+                {"ID_Prodotto": 3, "ID_Fornitore": 2, "ID_Zona": 2, "ID_Scaffalatura": 3, "Lotto": "L003", "Scadenza": "2024-10-31", "QuantitàProdotto": 200, "PesoLotto": 4.0, "PrezzoAcquisto": 20.0, "ValoreLotto": 24.0, "DataRicevimento": "2023-03-10", "DataPrenotazione": "2023-03-01", "Stato": "Esaurito"},
+                {"ID_Prodotto": 4, "ID_Fornitore": 2, "ID_Zona": 2, "ID_Scaffalatura": 4, "Lotto": "L004", "Scadenza": "2024-09-30", "QuantitàProdotto": 180, "PesoLotto": 5.4, "PrezzoAcquisto": 9.0, "ValoreLotto": 10.8, "DataRicevimento": None, "DataPrenotazione": "2023-04-15", "Stato": "Prenotato"},
+                {"ID_Prodotto": 5, "ID_Fornitore": 3, "ID_Zona": 3, "ID_Scaffalatura": 5, "Lotto": "L005", "Scadenza": "2024-08-31", "QuantitàProdotto": 250, "PesoLotto": 125.0, "PrezzoAcquisto": 750.0, "ValoreLotto": 900.0, "DataRicevimento": "2023-05-05", "DataPrenotazione": "2023-04-25", "Stato": "Disponibile"},
+                {"ID_Prodotto": 6, "ID_Fornitore": 3, "ID_Zona": 3, "ID_Scaffalatura": 6, "Lotto": "L006", "Scadenza": "2024-07-31", "QuantitàProdotto": 220, "PesoLotto": 44.0, "PrezzoAcquisto": 440.0, "ValoreLotto": 528.0, "DataRicevimento": "2023-06-15", "DataPrenotazione": "2023-06-01", "Stato": "Esaurito"},
+                {"ID_Prodotto": 7, "ID_Fornitore": 4, "ID_Zona": 1, "ID_Scaffalatura": 1, "Lotto": "L007", "Scadenza": "2024-06-30", "QuantitàProdotto": 160, "PesoLotto": 160.0, "PrezzoAcquisto": 480.0, "ValoreLotto": 576.0, "DataRicevimento": None,"DataPrenotazione": "2023-07-05", "Stato": "Prenotato"},
+                {"ID_Prodotto": 8, "ID_Fornitore": 4, "ID_Zona": 1, "ID_Scaffalatura": 2, "Lotto": "L008", "Scadenza": "2024-05-31", "QuantitàProdotto": 140, "PesoLotto": 8.4, "PrezzoAcquisto": 168.0, "ValoreLotto": 201.6, "DataRicevimento": "2023-08-20", "DataPrenotazione": "2023-08-01", "Stato": "Disponibile"},
+                {"ID_Prodotto": 9, "ID_Fornitore": 5, "ID_Zona": 2, "ID_Scaffalatura": 3, "Lotto": "L009", "Scadenza": "2024-04-30", "QuantitàProdotto": 130, "PesoLotto": 32.5, "PrezzoAcquisto": 520.0, "ValoreLotto": 624.0, "DataRicevimento": "2023-09-25", "DataPrenotazione": "2023-09-10", "Stato": "Esaurito"},
+                {"ID_Prodotto": 10, "ID_Fornitore": 5, "ID_Zona": 2, "ID_Scaffalatura": 4, "Lotto": "L010", "Scadenza": "2024-03-31", "QuantitàProdotto": 190, "PesoLotto": 3.8, "PrezzoAcquisto": 28.5, "ValoreLotto": 34.2, "DataRicevimento": None,"DataPrenotazione": "2023-10-01", "Stato": "Prenotato"}
             ]
             try:
-                conn.execute(insert(lotti_table).values(lotti_data))
+                result = conn.execute(insert(lotti_table).values(lotti_data))
                 conn.commit()
-                print(f"Inseriti {len(lotti_data)} lotti.")
+                print(f"Inseriti {result.rowcount} lotti.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento dei lotti: {e}")
-
             # Clienti
-            clienti_table = metadata.tables["Clienti"]
+            clienti_table = get_table(metadata, "Clienti")
             clienti_data = [
                 {"Nome": "Cliente X", "Indirizzo": "Via Verdi 10, Milano", "Telefono": "0212345679", "Email": "clienteX@email.com", "PartitaIVA": "IT11122233344"},
                 {"Nome": "Cliente Y", "Indirizzo": "Piazza Roma 20, Roma", "Telefono": "0698765433", "Email": "clienteY@email.com", "PartitaIVA": "IT55566677788"},
@@ -485,44 +496,44 @@ def populateSQL():
                 {"Nome": "Cliente V", "Indirizzo": "Piazza Duomo 1, Firenze", "Telefono": "0552345678", "Email": "clienteV@email.com", "PartitaIVA": "IT33322211100"}
             ]
             try:
-                conn.execute(insert(clienti_table).values(clienti_data))
+                result = conn.execute(insert(clienti_table).values(clienti_data))
                 conn.commit()
-                print(f"Inseriti {len(clienti_data)} clienti.")
+                print(f"Inseriti {result.rowcount} clienti.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento dei clienti: {e}")
             # Ordini
-            ordini_table = metadata.tables["Ordini"]
+            ordini_table = get_table(metadata, "Ordini")
             ordini_data = [
                 {"DataOrdine": "2023-10-25 09:00:00", "Tipo": "Entrata", "ID_Fornitore": 1, "ID_Cliente": None, "Stato": "In elaborazione"},
                 {"DataOrdine": "2023-10-26 10:00:00", "Tipo": "Uscita", "ID_Fornitore": None, "ID_Cliente": 1, "Stato": "Spedito"},
                 {"DataOrdine": "2023-10-27 11:00:00", "Tipo": "Entrata", "ID_Fornitore": 2, "ID_Cliente": None, "Stato": "Concluso"}
             ]
             try:
-                conn.execute(insert(ordini_table).values(ordini_data))
+                result = conn.execute(insert(ordini_table).values(ordini_data))
                 conn.commit()
-                print(f"Inseriti {len(ordini_data)} ordini.")
+                print(f"Inseriti {result.rowcount} ordini.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento degli ordini: {e}")
 
             # DettagliOrdini
-            dettagli_ordini_table = metadata.tables["DettagliOrdini"]
+            dettagli_ordini_table = get_table(metadata, "DettagliOrdini")
             dettagli_ordini_data = [
                 {"ID_Ordine": 1, "ID_Lotto": 1, "Quantita": 50},
                 {"ID_Ordine": 2, "ID_Lotto": 2, "Quantita": 100},
                 {"ID_Ordine": 3, "ID_Lotto": 3, "Quantita": 75}
             ]
             try:
-                conn.execute(insert(dettagli_ordini_table).values(dettagli_ordini_data))
+                result = conn.execute(insert(dettagli_ordini_table).values(dettagli_ordini_data))
                 conn.commit()
-                print(f"Inseriti {len(dettagli_ordini_data)} dettagli ordini.")
+                print(f"Inseriti {result.rowcount} dettagli ordini.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento dei dettagli ordini: {e}")
                 
             # BaieCaricoScarico
-            baie_table = metadata.tables["BaieCaricoScarico"]
+            baie_table = get_table(metadata, "BaieCaricoScarico")
             baie_data = [
                 {"ZonaID": 3, "Nome": "Baia Carico 1", "Tipo": "Carico", "Stato": "Libera"},
                 {"ZonaID": 3, "Nome": "Baia Carico 2", "Tipo": "Carico", "Stato": "Libera"},
@@ -530,15 +541,15 @@ def populateSQL():
                 {"ZonaID": 4, "Nome": "Baia Scarico 2", "Tipo": "Scarico", "Stato": "Libera"},
             ]
             try:
-                conn.execute(insert(baie_table).values(baie_data))
+                result = conn.execute(insert(baie_table).values(baie_data))
                 conn.commit()
-                print(f"Inserite {len(baie_data)} baie di carico/scarico.")
+                print(f"Inserite {result.rowcount} baie di carico/scarico.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento delle baie: {e}")
 
             # Sensori
-            sensori_table = metadata.tables["Sensori"]
+            sensori_table = get_table(metadata, "Sensori")
             sensori_data = [
                 {"Tipo": "Presenza", "ID_Zona": 1},
                 {"Tipo": "Temperatura", "ID_Zona": 1},
@@ -556,16 +567,16 @@ def populateSQL():
             ]
 
             try:
-                conn.execute(insert(sensori_table).values(sensori_data))
+                result = conn.execute(insert(sensori_table).values(sensori_data))
                 conn.commit()
-                print(f"Inseriti {len(sensori_data)} sensori.")
+                print(f"Inseriti {result.rowcount} sensori.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento dei sensori: {e}")
 
 
             # StazioneRicarica
-            stazione_ricarica_table = metadata.tables["StazioneRicarica"]
+            stazione_ricarica_table = get_table(metadata, "StazioneRicarica")
             stazioni_ricarica_data = [
                 {"ZonaID": 1, "Nome": "Stazione Ricarica 1", "Stato": "Libera"},
                 {"ZonaID": 2, "Nome": "Stazione Ricarica 2", "Stato": "Libera"},
@@ -573,15 +584,15 @@ def populateSQL():
                 {"ZonaID": 4, "Nome": "Stazione Ricarica 4", "Stato": "Libera"}
             ]
             try:
-                conn.execute(insert(stazione_ricarica_table).values(stazioni_ricarica_data))
+                result = conn.execute(insert(stazione_ricarica_table).values(stazioni_ricarica_data))
                 conn.commit()
-                print(f"Inserite {len(stazioni_ricarica_data)} stazioni di ricarica.")
+                print(f"Inserite {result.rowcount} stazioni di ricarica.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento delle stazioni di ricarica: {e}")
 
             # Robot
-            robot_table = metadata.tables["Robot"]
+            robot_table = get_table(metadata, "Robot")
             robot_data = [
                 {"ID_Sensore": 1, "ID_Zona": 1, "Nome": "Robot A", "Stato": "Disponibile", "PosizioneAttuale": "Scaffale A1", "Capacita": 100, "ID_Ricarica": 1},
                 {"ID_Sensore": 1, "ID_Zona": 1, "Nome": "Robot B", "Stato": "Disponibile", "PosizioneAttuale": "Scaffale A2", "Capacita": 120, "ID_Ricarica": 1},
@@ -591,15 +602,15 @@ def populateSQL():
                 {"ID_Sensore": 10, "ID_Zona": 4, "Nome": "Robot F", "Stato": "Disponibile", "PosizioneAttuale": "Scaffale D1", "Capacita": 140, "ID_Ricarica": 4}
             ]
             try:
-                conn.execute(insert(robot_table).values(robot_data))
+                result = conn.execute(insert(robot_table).values(robot_data))
                 conn.commit()
-                print(f"Inseriti {len(robot_data)} robot.")
+                print(f"Inseriti {result.rowcount} robot.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento dei robot: {e}")
 
             # RichiesteMovimento
-            richieste_table = metadata.tables["RichiesteMovimento"]
+            richieste_table = get_table(metadata, "RichiesteMovimento")
             richieste_data = [
                 {"ID_Lotto": 1, "ID_Zona_Partenza": 1, "ID_Zona_Destinazione": 2, "ID_Scaffalatura_Destinazione": 1, "ID_Robot": 1, "Priorita": "Alta", "DataRichiesta": "2023-10-27 10:00:00"},
                 {"ID_Lotto": 2, "ID_Zona_Partenza": 1, "ID_Zona_Destinazione": 3, "ID_Scaffalatura_Destinazione": 2, "ID_Robot": 2, "Priorita": "Media", "DataRichiesta": "2023-10-28 11:00:00"},
@@ -608,15 +619,15 @@ def populateSQL():
                 {"ID_Lotto": 5, "ID_Zona_Partenza": 4, "ID_Zona_Destinazione": 2, "ID_Scaffalatura_Destinazione": 1, "ID_Robot": 4, "Priorita": "Media", "DataRichiesta": "2023-10-31 14:00:00"}
             ]
             try:
-                conn.execute(insert(richieste_table).values(richieste_data))
+                result = conn.execute(insert(richieste_table).values(richieste_data))
                 conn.commit()
-                print(f"Inserite {len(richieste_data)} richieste di movimento.")
+                print(f"Inserite {result.rowcount} richieste di movimento.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento delle richieste di movimento: {e}")
 
             # DettagliMovimento
-            dettagli_movimento_table = metadata.tables["DettagliMovimento"]
+            dettagli_movimento_table = get_table(metadata, "DettagliMovimento")
             dettagli_movimento_data = [
                 {"ID_Richiesta": 1, "ID_Lotto": 1, "ID_Robot": 1, "ID_Zona_Partenza": 1, "ID_Zona_Destinazione": 2, "ID_Scaffalatura_Destinazione": 1, "Stato": "Completato", "DataMovimento": "2023-10-27 10:00:00", "DataCompletamento": "2023-10-27 10:15:00", "TipoMovimento": "Spostamento"},
                 {"ID_Richiesta": 2, "ID_Lotto": 2, "ID_Robot": 2, "ID_Zona_Partenza": 1, "ID_Zona_Destinazione": 3, "ID_Scaffalatura_Destinazione": 2, "Stato": "In corso", "DataMovimento": "2023-10-28 11:00:00", "DataCompletamento": None, "TipoMovimento": "Spostamento"},
@@ -626,99 +637,99 @@ def populateSQL():
             ]
 
             try:
-                conn.execute(insert(dettagli_movimento_table).values(dettagli_movimento_data))
+                result = conn.execute(insert(dettagli_movimento_table).values(dettagli_movimento_data))
                 conn.commit()
-                print(f"Inseriti {len(dettagli_movimento_data)} dettagli movimento.")
+                print(f"Inseriti {result.rowcount} dettagli movimento.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento dei dettagli movimento: {e}")
 
             # Veicoli
-            veicoli_table = metadata.tables["Veicoli"]
+            veicoli_table = get_table(metadata, "Veicoli")
             veicoli_data = [
                 {"Tipo": "Bilico", "Capacita": 10000, "Stato": "Disponibile", "Targa": "AA123BB"},
                 {"Tipo": "Furgone", "Capacita": 2000, "Stato": "Disponibile", "Targa": "CC456DD"},
                 {"Tipo": "Carrello_Elevatore", "Capacita": 500, "Stato": "Disponibile", "Targa": "EE789FF"}
             ]
             try:
-                conn.execute(insert(veicoli_table).values(veicoli_data))
+                result = conn.execute(insert(veicoli_table).values(veicoli_data))
                 conn.commit()
-                print(f"Inseriti {len(veicoli_data)} veicoli.")
+                print(f"Inseriti {result.rowcount} veicoli.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento dei veicoli: {e}")
 
             # Consegne
-            consegne_table = metadata.tables["Consegne"]
+            consegne_table = get_table(metadata, "Consegne")
             consegne_data = [
                 {"ID_Ordine": 1, "ID_Veicolo": 1, "DataConsegna": "2023-10-28", "Stato": "Completata"},
                 {"ID_Ordine": 2, "ID_Veicolo": 2, "DataConsegna": "2023-10-30", "Stato": "In corso"},
                 {"ID_Ordine": 3, "ID_Veicolo": 3, "DataConsegna": "2023-11-01", "Stato": "Pianificata"}
             ]
             try:
-                conn.execute(insert(consegne_table).values(consegne_data))
+                result = conn.execute(insert(consegne_table).values(consegne_data))
                 conn.commit()
-                print(f"Inserite {len(consegne_data)} consegne.")
+                print(f"Inserite {result.rowcount} consegne.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento delle consegne: {e}")
 
             # ManutenzioneRobot
-            manutenzione_robot_table = metadata.tables["ManutenzioneRobot"]
+            manutenzione_robot_table = get_table(metadata, "ManutenzioneRobot")
             manutenzione_robot_data = [
                 {"ID_Robot": 1, "DataManutenzione": "2023-11-10", "Tipo": "Ispezione", "Stato": "Programmata", "Note": "Controllo generale"},
                 {"ID_Robot": 2, "DataManutenzione": "2023-11-15", "Tipo": "Riparazione", "Stato": "Programmata", "Note": "Sostituzione batteria"},
                 {"ID_Robot": 3, "DataManutenzione": "2023-11-20", "Tipo": "Sostituzione", "Stato": "Programmata", "Note": "Sostituzione motore"}
             ]
             try:
-                conn.execute(insert(manutenzione_robot_table).values(manutenzione_robot_data))
+                result = conn.execute(insert(manutenzione_robot_table).values(manutenzione_robot_data))
                 conn.commit()
-                print(f"Inserite {len(manutenzione_robot_data)} manutenzioni robot.")
+                print(f"Inserite {result.rowcount} manutenzioni robot.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento delle manutenzioni robot: {e}")
 
             # ManutenzioneScaffalature
-            manutenzione_scaffalature_table = metadata.tables["ManutenzioneScaffalature"]
+            manutenzione_scaffalature_table = get_table(metadata, "ManutenzioneScaffalature")
             manutenzione_scaffalature_data = [
                 {"ID_Scaffalatura": 1, "DataManutenzione": "2023-11-05", "Tipo": "Ispezione", "Stato": "Programmata", "Note": "Verifica Bulloneria"},
                 {"ID_Scaffalatura": 2, "DataManutenzione": "2023-11-08", "Tipo": "Riparazione", "Stato": "Programmata", "Note": "Sostituzione mensole"},
                 {"ID_Scaffalatura": 3, "DataManutenzione": "2023-11-12", "Tipo": "Pulizia", "Stato": "Programmata", "Note": "Pulizia generale"}
             ]
             try:
-                conn.execute(insert(manutenzione_scaffalature_table).values(manutenzione_scaffalature_data))
+                result = conn.execute(insert(manutenzione_scaffalature_table).values(manutenzione_scaffalature_data))
                 conn.commit()
-                print(f"Inserite {len(manutenzione_scaffalature_data)} manutenzioni scaffalature.")
+                print(f"Inserite {result.rowcount} manutenzioni scaffalature.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento delle manutenzioni scaffalature: {e}")
 
             # ManutenzioneZone
-            manutenzione_zone_table = metadata.tables["ManutenzioneZone"]
+            manutenzione_zone_table = get_table(metadata, "ManutenzioneZone")
             manutenzione_zone_data = [
                 {"ID_Zona": 1, "DataManutenzione": "2023-11-20", "Tipo": "Pulizia", "Stato": "Programmata", "Note": "Pulizia e sanificazione"},
                 {"ID_Zona": 2, "DataManutenzione": "2023-11-25", "Tipo": "Riparazione", "Stato": "Programmata", "Note": "Riparazione illuminazione"},
                 {"ID_Zona": 3, "DataManutenzione": "2023-11-30", "Tipo": "Ispezione", "Stato": "Programmata", "Note": "Ispezione generale"}
             ]
             try:
-                conn.execute(insert(manutenzione_zone_table).values(manutenzione_zone_data))
+                result = conn.execute(insert(manutenzione_zone_table).values(manutenzione_zone_data))
                 conn.commit()
-                print(f"Inserite {len(manutenzione_zone_data)} manutenzioni zone.")
+                print(f"Inserite {result.rowcount} manutenzioni zone.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento delle manutenzioni zone: {e}")
 
             # ManutenzioneVeicoli
-            manutenzione_veicoli_table = metadata.tables["ManutenzioneVeicoli"]
+            manutenzione_veicoli_table = get_table(metadata, "ManutenzioneVeicoli")
             manutenzione_veicoli_data = [
                 {"ID_Veicolo": 1, "DataManutenzione": "2023-11-12", "Tipo": "Ispezione", "Stato": "Programmata", "Note": "Controllo freni e livelli"},
                 {"ID_Veicolo": 2, "DataManutenzione": "2023-11-18", "Tipo": "Riparazione", "Stato": "Programmata", "Note": "Sostituzione pneumatici"},
                 {"ID_Veicolo": 3, "DataManutenzione": "2023-11-22", "Tipo": "Sostituzione", "Stato": "Programmata", "Note": "Sostituzione batteria"}
             ]
             try:
-                conn.execute(insert(manutenzione_veicoli_table).values(manutenzione_veicoli_data))
+                result = conn.execute(insert(manutenzione_veicoli_table).values(manutenzione_veicoli_data))
                 conn.commit()
-                print(f"Inserite {len(manutenzione_veicoli_data)} manutenzioni veicoli.")
+                print(f"Inserite {result.rowcount} manutenzioni veicoli.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento delle manutenzioni veicoli: {e}")
@@ -728,16 +739,16 @@ def populateSQL():
             id1= MagUtils.create_employee_id("RSSMRA80A01H501R", "Mario", "Rossi", "Amministratore", "2020-01-01")
             id2= MagUtils.create_employee_id("GLLGNN90B02H501Z", "Giovanni", "Gialli", "Operatore", "2021-02-01")
             id3= MagUtils.create_employee_id("VRDBRT85C03H501X", "Roberto", "Verdi", "Tecnico", "2022-03-01")
-            dipendenti_table = metadata.tables["Dipendenti"]
+            dipendenti_table = get_table(metadata, "Dipendenti")
             dipendenti_data = [
                 {"ID_Dipendente": id1, "CodiceFiscale": "RSSMRA80A01H501R", "Nome": "Mario", "Cognome": "Rossi", "Ruolo": "Amministratore", "Mansione": "Manager", "DataAssunzione": "2020-01-01"},
                 {"ID_Dipendente": id2, "CodiceFiscale": "GLLGNN90B02H501Z", "Nome": "Giovanni", "Cognome": "Gialli", "Ruolo": "Operatore", "Mansione": "Magazziniere", "DataAssunzione": "2021-02-01"},
-                {"ID_Dipendente": id3, "CodiceFiscale": "VRDBRT85C03H501X", "Nome": "Roberto", "Cognome": "Verdi", "Ruolo": "Operatore", "Mansione": "Manutenzione", "DataAssunzione": "2022-03-01"}
+                {"ID_Dipendente": id3, "CodiceFiscale": "VRDBRT85C03H501X", "Nome": "Roberto", "Cognome": "Verdi", "Ruolo": "Tecnico", "Mansione": "Manutenzione", "DataAssunzione": "2022-03-01"}
             ]
             try:
-                conn.execute(insert(dipendenti_table).values(dipendenti_data))
+                result = conn.execute(insert(dipendenti_table).values(dipendenti_data))
                 conn.commit()
-                print(f"Inseriti {len(dipendenti_data)} dipendenti.")
+                print(f"Inseriti {result.rowcount} dipendenti.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento dei dipendenti: {e}")
@@ -747,19 +758,38 @@ def populateSQL():
             id1= MagUtils.create_employee_id("RSSMRA80A01H501R", "Mario", "Rossi", "Amministratore", "2020-01-01")
             id2= MagUtils.create_employee_id("GLLGNN90B02H501Z", "Giovanni", "Gialli", "Operatore", "2021-02-01")
             id3= MagUtils.create_employee_id("VRDBRT85C03H501X", "Roberto", "Verdi", "Tecnico", "2022-03-01")
-            turni_table = metadata.tables["TurniDipendenti"]
+            turni_table = get_table(metadata, "TurniDipendenti")
             turni_data = [
                 {"ID_Dipendente": id1 , "DataInizio": "2023-10-27 09:00:00", "DataFine": "2023-10-27 18:00:00", "Mansione": "Manager"},
                 {"ID_Dipendente": id2, "DataInizio": "2023-10-27 08:00:00", "DataFine": "2023-10-27 16:00:00", "Mansione": "Magazziniere"},
                 {"ID_Dipendente": id3, "DataInizio": "2023-10-27 09:00:00", "DataFine": "2023-10-27 17:00:00", "Mansione": "Manutenzione"}
             ]
             try:
-                conn.execute(insert(turni_table).values(turni_data))
+                result = conn.execute(insert(turni_table).values(turni_data))
                 conn.commit()
-                print(f"Inseriti {len(turni_data)} turni dipendenti.")
+                print(f"Inseriti {result.rowcount} turni dipendenti.")
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento dei turni: {e}")
+
+def get_table_name(session, nome_tabella):
+    """
+    Restituisce il nome della tabella esistente nel database, indipendentemente dalle maiuscole/minuscole.
+
+    Args:
+        session: L'oggetto sessione SQLAlchemy.
+        nome_tabella (str): Il nome della tabella da cercare.
+
+    Returns:
+        str: Il nome della tabella esistente nel database.
+    """
+    metadata = MetaData()
+    metadata.reflect(bind=session.bind)
+    table_names = metadata.tables.keys()
+    for table_name in table_names:
+        if table_name.lower() == nome_tabella.lower():
+            return table_name
+    return None
 
 def add_recordSQL(session, nome_tabella, dati):
     """
@@ -774,10 +804,15 @@ def add_recordSQL(session, nome_tabella, dati):
         bool: True se l'inserimento ha avuto successo, False in caso di errore.
     """
     try:
+        table_name = get_table_name(session, nome_tabella)
+        if not table_name:
+            print(f"Errore: La tabella {nome_tabella} non esiste.")
+            return False
+
         with session.begin():
             colonne = ", ".join(f"`{key}`" for key in dati.keys())
             valori = ", ".join(f":{key}" for key in dati.keys())
-            sql = f"INSERT INTO `{nome_tabella}` ({colonne}) VALUES ({valori})"
+            sql = f"INSERT INTO `{table_name}` ({colonne}) VALUES ({valori})"
             session.execute(text(sql), dati)
         return True
     except Exception as e:
@@ -800,9 +835,14 @@ def update_recordSQL(session, nome_tabella, dati_aggiornamento, condizione, args
         Restituisce False in caso di errore.
     """
     try:
+        table_name = get_table_name(session, nome_tabella)
+        if not table_name:
+            print(f"Errore: La tabella {nome_tabella} non esiste.")
+            return False
+
         with session.begin():
             set_clause = ", ".join([f"{key} = :{key}" for key in dati_aggiornamento])
-            sql = f"UPDATE `{nome_tabella}` SET {set_clause} WHERE {condizione}"
+            sql = f"UPDATE `{table_name}` SET {set_clause} WHERE {condizione}"
             result = session.execute(text(sql), dati_aggiornamento | args)
         return result.rowcount
     except Exception as e:
@@ -824,8 +864,13 @@ def delete_recordSQL(session, nome_tabella, condizione, args):
         Restituisce False in caso di errore.
     """
     try:
+        table_name = get_table_name(session, nome_tabella)
+        if not table_name:
+            print(f"Errore: La tabella {nome_tabella} non esiste.")
+            return False
+
         with session.begin():
-            sql = f"DELETE FROM `{nome_tabella}` WHERE {condizione}"
+            sql = f"DELETE FROM `{table_name}` WHERE {condizione}"
             result = session.execute(text(sql), args or {})
             rows_deleted = result.rowcount
         return rows_deleted if rows_deleted > 0 else 0
@@ -852,8 +897,13 @@ def select_recordsSQL(session, nome_tabella, colonne="*", condizione=None, args=
         Restituisce False in caso di errore.
     """
     try:
+        table_name = get_table_name(session, nome_tabella)
+        if not table_name:
+            print(f"Errore: La tabella {nome_tabella} non esiste.")
+            return False
+
         with session.begin():
-            sql = f"SELECT {colonne} FROM `{nome_tabella}`"
+            sql = f"SELECT {colonne} FROM `{table_name}`"
             if condizione:
                 sql += f" WHERE {condizione}"
             if ordina_per:

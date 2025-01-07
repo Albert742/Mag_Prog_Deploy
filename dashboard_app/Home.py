@@ -1,32 +1,52 @@
 import streamlit as st
 import time
+from utils.MagUtils import log_logout
 from streamlit_extras.switch_page_button import switch_page
-    
+
 # Funzione per la pagina di ingresso della dashboard
 def warehouse_dashboard_home():
+    
     # Check authentication state and display appropriate button
     if "authenticated" not in st.session_state or not st.session_state.get("authenticated", False):
         st.sidebar.write("Utente Guest.")
         if st.sidebar.button("Log In"):
            switch_page("Login")
     elif st.sidebar.button("Log Out"):
+        log_logout(st.session_state.get("id_utente"))
         st.success("Logout effettuato con successo. Verrai reindirizzato alla pagina di login.")
         time.sleep(2)
         switch_page("Login")
         st.session_state.clear()
         st.rerun()
     else:
-        st.sidebar.write(f"Logged in as: {st.session_state.get('username', 'Unknown')}")
+        st.sidebar.write(f"Accesso effettuato da: {st.session_state.get('username', 'Unknown')}")
 
-    st.sidebar.page_link('Home.py', label='Home')
-    st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
-    st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
-    st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
+    st.sidebar.title("Menu")
     
+    ruolo = st.session_state.get("ruolo", "Guest")
+
+    if ruolo == "Amministratore":
+        st.sidebar.page_link('Home.py', label='Home')
+        st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
+        st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
+        st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
+        st.sidebar.page_link('pages/Test_Magazzino.py', label='Test Funzionalità')
+    elif ruolo == "Tecnico":
+        st.sidebar.page_link('Home.py', label='Home')
+        st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
+        st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
+    elif ruolo == "Operatore":
+        st.sidebar.page_link('Home.py', label='Home')
+        st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
+
     # Contenuto della pagina
     st.image("logo.jpg", use_container_width=True)
     st.write("# Benvenuto nella Dashboard di Gestione Magazzino di Food&Pharma 📦")
-    st.sidebar.success("Naviga attraverso il menu per accedere alle diverse funzionalità ")
+
+    if st.session_state.get("authenticated", False):
+        st.sidebar.success("Naviga in un'altra pagina utilizzando il menu.")
+    else:
+        st.sidebar.info("Esegui il login per visualizzare le altre pagine.")
 
     st.markdown(
         """
@@ -50,8 +70,6 @@ def warehouse_dashboard_home():
         - **Gestione Ordini**: Gestisci gli ordini in arrivo e in partenza in modo efficiente.
         - **Gestione Zone**: Organizza e ottimizza le zone di stoccaggio e le scaffalature.
         - **Log di Controllo Qualità**: Verifica i log di controllo qualità per assicurarti che siano rispettati gli standard.
-
-
         """
     )
 
@@ -62,4 +80,3 @@ def warehouse_dashboard_home():
 
 if __name__ == "__main__":
     warehouse_dashboard_home()
-
