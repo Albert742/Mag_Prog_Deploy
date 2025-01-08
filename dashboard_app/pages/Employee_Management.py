@@ -35,6 +35,7 @@ if ruolo == "Amministratore":
     st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
     st.sidebar.page_link('pages/Orders_Managment.py', label='Gestione Ordini')
     st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
+    st.sidebar.page_link('pages/Allert_Management.py', label='Gestione Allerte')
     st.sidebar.page_link('pages/Test_Magazzino.py', label='Test Funzionalità')
 elif ruolo == "Tecnico":
     st.sidebar.page_link('Home.py', label='Home')

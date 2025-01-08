@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import time
+import datetime
 from sqlalchemy import text
 from utils.MagDBcontroller import connessione, select_recordsSQL, update_recordSQL, add_recordSQL, delete_recordSQL
 from utils.MagUtils import log_logout
@@ -139,6 +140,7 @@ if ruolo == "Amministratore":
     st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
     st.sidebar.page_link('pages/Orders_Managment.py', label='Gestione Ordini')
     st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
+    st.sidebar.page_link('pages/Allert_Management.py', label='Gestione Allerte')
     st.sidebar.page_link('pages/Test_Magazzino.py', label='Test Funzionalità')
 elif ruolo == "Tecnico":
     st.sidebar.page_link('Home.py', label='Home')
@@ -329,7 +331,11 @@ if st.session_state.get("show_form_update_lotti", False):
             if submit_button:
                 # Aggiorna stato del lotto
                 try:
-                    rows_updated = update_stato_lotto(lotto_id, nuovo_stato)
+                    update_data = {"Stato": nuovo_stato}
+                    if selected_lotto['Stato'] == 'Prenotato' and nuovo_stato == 'Disponibile':
+                        update_data["DataRicevimento"] = datetime.datetime.now()
+
+                    rows_updated = update_recordSQL(session, "Lotti", update_data, "ID_Lotto = :lotto_id", {"lotto_id": lotto_id})
                     if rows_updated:
                         st.success(f"Stato del lotto {lotto_id} aggiornato con successo!")
                         time.sleep(2)

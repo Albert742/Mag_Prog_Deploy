@@ -32,6 +32,7 @@ def warehouse_dashboard_home():
         st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
         st.sidebar.page_link('pages/Orders_Managment.py', label='Gestione Ordini')
         st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
+        st.sidebar.page_link('pages/Allert_Management.py', label='Gestione Allerte')
         st.sidebar.page_link('pages/Test_Magazzino.py', label='Test Funzionalità')
     elif ruolo == "Tecnico":
         st.sidebar.page_link('Home.py', label='Home')
@@ -60,21 +61,17 @@ def warehouse_dashboard_home():
 
         - **Gestione Inventari**: Tenere traccia delle quantità di stock, delle posizioni dei prodotti e delle date di scadenza.
         - **Elaborazione Ordini**: Creare, aggiornare e monitorare gli ordini per operazioni fluide.
-        - **Gestione Zone e Scaffalature**: Sovrintendere e gestire le zone di stoccaggio e le loro configurazioni.
-        - **Controllo Qualità**: Monitorare le attività di controllo qualità per mantenere gli standard.
+        - **Gestione Dipendenti**: Assegnare ruoli e autorizzazioni ai dipendenti per un'organizzazione efficace.
+        - **Gestione Manutenzioni**: Pianificare e monitorare le manutenzioni del magazzino.
+        
 
         ### Funzionalità Principali
         - **Dati in Tempo Reale**: Rimani aggiornato con informazioni in tempo reale sul tuo magazzino.
         - **Interfaccia Utente Amichevole**: Semplifica le operazioni del magazzino complesse con un layout intuitivo.
-        - **Analisi e Reporting**: Genera informazioni dai dati delle operazioni del magazzino per prendere decisioni informate.
+        - **Reporting**: Visualizza dati aggregati per una panoramica completa del tuo magazzino.
 
         ### Guida all'Avvio
-        Utilizza il menu a sinistra per navigare tra le diverse pagine, comprese:
-
-        - **Panoramica Inventari**: Visualizza i livelli di stock correnti e i rapporti dettagliati sull'inventario.
-        - **Gestione Ordini**: Gestisci gli ordini in arrivo e in partenza in modo efficiente.
-        - **Gestione Zone**: Organizza e ottimizza le zone di stoccaggio e le scaffalature.
-        - **Log di Controllo Qualità**: Verifica i log di controllo qualità per assicurarti che siano rispettati gli standard.
+        Effettua l'accesso è utilizza il menu a sinistra per navigare tra le diverse pagine.
         """
     )
 
