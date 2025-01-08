@@ -6,10 +6,6 @@ from streamlit.runtime.scriptrunner import get_script_run_ctx
 import hashlib
 from utils.MagDBcontroller import connessione, add_recordSQL, select_recordsSQL
 #from MagDBcontroller import connessione, add_recordSQL, select_recordsSQL
-import random
-import datetime
-import time
-import threading
 
 # Funzione per creare un ID dipendente unico
 def create_employee_id(codicefiscale, nome, cognome, ruolo, dataassunzione):
@@ -66,7 +62,4 @@ def log_logout(id_utente):
     with connessione() as conn:
         if conn:
             add_recordSQL(conn, "LogUtenti", log_data)
-
-# Flag per controllare l'esecuzione della generazione dei dati dei sensori
-stop_event = threading.Event()
 

@@ -4,7 +4,6 @@ from sqlalchemy.exc import OperationalError, IntegrityError
 import time
 import toml
 
-
 def connessione():
     """
     Esegue la connessione al database specificato nel file secrets.toml
@@ -45,29 +44,23 @@ def connessione():
 
     return None
 
-def query(session, sql, args=None, commit=False):
+def create_database():
     """
-    Esegue una query sul database usando SQLAlchemy.
-    
-    Args:
-        session: La sessione di connessione al database.
-        sql: La query SQL da eseguire.
-        args: Un dizionario di argomenti da passare alla query.
-        commit: Se True, la modifica viene commitata.
-    
-    Returns:
-        Il risultato della query. Se la query non restituisce nulla, restituisce True se l'operazione va a buon fine, altrimenti False.
+    Crea il database se non esiste già.
     """
-    try:
-        result = session.execute(text(sql), args or {})
-        if commit:
-            session.commit()
-            return result.lastrowid if result.lastrowid else True
-        return result
-    except IntegrityError as e:
-        session.rollback()
-        print(f"Errore durante l'esecuzione della query: {e}")
-        return False
+    toml_data = toml.load(".streamlit/secrets.toml")
+    host = toml_data["mysql"]["host"]
+    user = toml_data["mysql"]["username"]
+    password = toml_data["mysql"]["password"]
+    database = toml_data["mysql"]["database"]
+    port = toml_data["mysql"]["port"]
+
+    connection_string = f"mysql+pymysql://{user}:{password}@{host}:{port}/"
+
+    engine = create_engine(connection_string)
+    with engine.connect() as conn:
+        conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {database}"))
+        print(f"Database '{database}' creato con successo (se non esisteva già).")
 
 def create_tableSQL(session, nome_tabella, definizione):
     """
@@ -79,10 +72,22 @@ def create_tableSQL(session, nome_tabella, definizione):
         definizione: La definizione della tabella, ad esempio "id INT PRIMARY KEY, campo VARCHAR(255)".
 
     Returns:
-        Il risultato dell'esecuzione della query. Se la query non restituisce nulla, restituisce True se l'operazione va a buon fine, altrimenti False.
+        bool: True se l'operazione va a buon fine, False in caso di errore.
     """
-    sql = f"CREATE TABLE IF NOT EXISTS `{nome_tabella}` ({definizione})"
-    return query(session, sql, commit=True)
+    try:
+        table_name = get_table_name(session, nome_tabella)
+        if table_name:
+            print(f"La tabella {nome_tabella} esiste già.")
+            return False
+
+        with session.begin():
+            sql = f"CREATE TABLE IF NOT EXISTS `{nome_tabella}` ({definizione})"
+            session.execute(text(sql))
+        return True
+    except Exception as e:
+        session.rollback()
+        print(f"Errore durante la creazione della tabella {nome_tabella}: {e}")
+        return False
 
 def init_tables(session):
     """
@@ -925,22 +930,25 @@ def select_recordsSQL(session, nome_tabella, colonne="*", condizione=None, args=
 def Test_menu():
     while True:
         print("\nMenu di Test funzionalità:")
-        print("1. Inizializza tabelle")
-        print("2. Popola tabelle con dati di esempio")
-        print("3. Aggiungi record")
-        print("4. Aggiorna record")
-        print("5. Elimina record")
-        print("6. Seleziona record")
-        print("7. Esci")
+        print("1. Crea database se non esiste")
+        print("2. Inizializza tabelle")
+        print("3. Popola tabelle con dati di esempio")
+        print("4. Aggiungi record")
+        print("5. Aggiorna record")
+        print("6. Elimina record")
+        print("7. Seleziona record")
+        print("8. Esci")
 
         choice = input("Inserisci la tua scelta: ")
 
         try:
             if choice == '1':
-                initSQL()
+                create_database()
             elif choice == '2':
-                populateSQL()
+                initSQL()
             elif choice == '3':
+                populateSQL()
+            elif choice == '4':
                 table_name = input("Nome della tabella: ")
                 record_data = {}
                 while True:
@@ -950,12 +958,13 @@ def Test_menu():
                     value = input(f"Valore per {column_name}: ")
                     record_data[column_name] = value
 
-                success = add_recordSQL(table_name, record_data)
-                if success:
-                    print(f"Record aggiunto alla tabella {table_name} con successo.")
-                else:
-                    print(f"Errore nell'aggiunta del record alla tabella {table_name}. Controllare la presenza di errori nel log o verificare la correttezza dei dati inseriti.")
-            elif choice == '4':
+                with connessione() as session:
+                    success = add_recordSQL(session, table_name, record_data)
+                    if success:
+                        print(f"Record aggiunto alla tabella {table_name} con successo.")
+                    else:
+                        print(f"Errore nell'aggiunta del record alla tabella {table_name}. Controllare la presenza di errori nel log o verificare la correttezza dei dati inseriti.")
+            elif choice == '5':
                 table_name = input("Nome della tabella: ")
                 update_data = {}
                 condition_parts = []
@@ -980,12 +989,13 @@ def Test_menu():
                 if condition is None:
                     condition = input("Condizione WHERE (es. ID_Dipendente='TEC001', premi invio se nessuna condizione):")
 
-                rows_updated = update_recordSQL(table_name, update_data, condition, args)
-                if rows_updated:
-                    print(f"Record aggiornato con successo. Righe aggiornate: {rows_updated}")
-                else:
-                    print(f"Errore nell'aggiornamento del record nella tabella {table_name}.")
-            elif choice == '5':
+                with connessione() as session:
+                    rows_updated = update_recordSQL(session, table_name, update_data, condition, args)
+                    if rows_updated:
+                        print(f"Record aggiornato con successo. Righe aggiornate: {rows_updated}")
+                    else:
+                        print(f"Errore nell'aggiornamento del record nella tabella {table_name}.")
+            elif choice == '6':
                 table_name = input("Nome della tabella: ")
                 condition_parts = []
                 args = {}
@@ -1005,14 +1015,15 @@ def Test_menu():
                 if condition is None:
                     condition = input("Condizione WHERE (es. ID_Prodotto=1, premi invio se nessuna condizione): ")
 
-                rows_deleted = delete_recordSQL(table_name, condition, args)
-                if rows_deleted is False:
-                    print(f"Errore nell'eliminazione dei record dalla tabella {table_name}.")
-                elif rows_deleted > 0:
-                    print(f"Eliminati {rows_deleted} record dalla tabella {table_name}.")
-                else:
-                    print(f"Nessun record eliminato dalla tabella {table_name}.")
-            elif choice == '6':
+                with connessione() as session:
+                    rows_deleted = delete_recordSQL(session, table_name, condition, args)
+                    if rows_deleted is False:
+                        print(f"Errore nell'eliminazione dei record dalla tabella {table_name}.")
+                    elif rows_deleted > 0:
+                        print(f"Eliminati {rows_deleted} record dalla tabella {table_name}.")
+                    else:
+                        print(f"Nessun record eliminato dalla tabella {table_name}.")
+            elif choice == '7':
                 table_name = input("Nome della tabella: ")
                 columns = input("Colonne da selezionare (separate da virgole, o * per tutte): ")
                 condition = input("Condizione WHERE (opzionale, premi invio per nessuna condizione): ")
@@ -1024,20 +1035,21 @@ def Test_menu():
                     if ":id" in condition:
                         args["id"] = int(input("Inserisci l'ID: "))
 
-                results = select_recordsSQL(table_name, columns, condition, args, order_by, limit)
-                if results:
-                    print("\nRisultati:")
-                    for record in results:
-                        print(record)
-                else:
-                    print("Nessun risultato trovato.")
-            elif choice == '7':
+                with connessione() as session:
+                    results = select_recordsSQL(session, table_name, columns, condition, args, order_by, limit)
+                    if results:
+                        print("\nRisultati:")
+                        for record in results:
+                            print(record)
+                    else:
+                        print("Nessun risultato trovato.")
+            elif choice == '8':
                 print("Uscita dal programma. Arrivederci")
                 break
             else:
                 print("Scelta non valida.")
         except Exception as e:
             print(f"Errore imprevisto: {e}")
-
+            
 if __name__ == '__main__':
     Test_menu()

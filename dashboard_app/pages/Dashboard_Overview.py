@@ -8,7 +8,7 @@ from streamlit_extras.switch_page_button import switch_page
 
 # Verifica autenticazione
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
-    st.error("Accesso non autorizzato. Effettua il login prima.")
+    st.error("Accesso non autorizzato. Effettua il login prima o accedi con un account autorizzato.")
     time.sleep(2)
     switch_page("Login")
     st.stop()
@@ -52,14 +52,19 @@ if ruolo == "Amministratore":
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
     st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
     st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
+    st.sidebar.page_link('pages/Orders_Managment.py', label='Gestione Ordini')
+    st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
     st.sidebar.page_link('pages/Test_Magazzino.py', label='Test Funzionalità')
 elif ruolo == "Tecnico":
     st.sidebar.page_link('Home.py', label='Home')
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
     st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
+    st.sidebar.page_link('pages/Orders_Managment.py', label='Gestione Ordini')
+    st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
 elif ruolo == "Operatore":
     st.sidebar.page_link('Home.py', label='Home')
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
+
 
 st.sidebar.success("Naviga in un'altra pagina utilizzando il menu.")
 

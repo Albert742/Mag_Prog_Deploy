@@ -3,13 +3,19 @@ Modulo che contiene la pagina di test del magazzino
 """
 import streamlit as st
 import time
-import plotly.express as px
 import random
 import datetime
 import threading
 from utils.MagDBcontroller import connessione, select_recordsSQL, add_recordSQL
 from utils.MagUtils import log_logout
 from streamlit_extras.switch_page_button import switch_page
+
+# Verifica autenticazione
+if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
+    st.error("Accesso non autorizzato. Effettua il login prima o accedi con un account autorizzato.")
+    time.sleep(2)
+    switch_page("Login")
+    st.stop()
 
 # Define the stop event
 stop_event = threading.Event()
@@ -27,6 +33,7 @@ def generate_sensor_data():
         session.close()
         return
 
+    record_count = 0
     while not stop_event.is_set():
         for sensore in sensori:
             if sensore['Tipo'] == 'Temperatura':
@@ -43,9 +50,11 @@ def generate_sensor_data():
                 "DataLettura": datetime.datetime.now()
             }
             add_recordSQL(session, "LettureSensori", lettura)
+            record_count += 1
         time.sleep(5)  # Attendi 5 secondi prima di generare nuovi dati
 
     session.close()
+    st.write(f"Sessione terminata. Record aggiunti: {record_count}")
 
 # Funzione per avviare la generazione dei dati
 def start_generating_data():
@@ -82,10 +91,15 @@ if ruolo == "Amministratore":
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
     st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
     st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
+    st.sidebar.page_link('pages/Orders_Managment.py', label='Gestione Ordini')
+    st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
+    st.sidebar.page_link('pages/Test_Magazzino.py', label='Test Funzionalità')
 elif ruolo == "Tecnico":
     st.sidebar.page_link('Home.py', label='Home')
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
     st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
+    st.sidebar.page_link('pages/Orders_Managment.py', label='Gestione Ordini')
+    st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
 elif ruolo == "Operatore":
     st.sidebar.page_link('Home.py', label='Home')
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')

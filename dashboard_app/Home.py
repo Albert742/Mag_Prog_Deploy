@@ -30,14 +30,19 @@ def warehouse_dashboard_home():
         st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
         st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
         st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
+        st.sidebar.page_link('pages/Orders_Managment.py', label='Gestione Ordini')
+        st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
         st.sidebar.page_link('pages/Test_Magazzino.py', label='Test Funzionalità')
     elif ruolo == "Tecnico":
         st.sidebar.page_link('Home.py', label='Home')
         st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
         st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
+        st.sidebar.page_link('pages/Orders_Managment.py', label='Gestione Ordini')
+        st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
     elif ruolo == "Operatore":
         st.sidebar.page_link('Home.py', label='Home')
         st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
+
 
     # Contenuto della pagina
     st.image("logo.jpg", use_container_width=True)
