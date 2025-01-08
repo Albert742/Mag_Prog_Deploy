@@ -66,22 +66,22 @@ st.sidebar.success("Naviga in un'altra pagina utilizzando il menu.")
 # Panoramica Generale
 st.write("## Panoramica Generale")
 
-# Bottone per aggiornare i dati
-if st.button("Aggiorna Dati"):
-    st.rerun()
+# Visualizza la temperatura più recente per zona
+letturasensori = select_recordsSQL(session, "LettureSensori", colonne="ID_Sensore, DataLettura, Valore", condizione="Tipo = 'Temperatura'", ordina_per="DataLettura DESC")
+sensori = select_recordsSQL(session, "Sensori", colonne="ID_Sensore, ID_Zona")
+zone = select_recordsSQL(session, "Zone", colonne="ID_Zona, Nome")
 
-# Visualizza un grafico a linee della temperatura media nel tempo
-sensori = select_recordsSQL(session, "LettureSensori", colonne="DataLettura, Valore", condizione="Tipo = 'Temperatura'")
-if sensori:
-    st.write("### Dati Sensori")
-    st.write(sensori)  # Stampa i dati dei sensori per debug
+if letturasensori and sensori and zone:
+    st.write("### Temperatura più recente per Zona")
+    df_letturasensori = pd.DataFrame(letturasensori)
     df_sensori = pd.DataFrame(sensori)
-    df_sensori['DataLettura'] = pd.to_datetime(df_sensori['DataLettura'])
-    df_sensori['Periodo'] = df_sensori['DataLettura'].dt.to_period('M')
-    df_sensori_media = df_sensori.groupby('Periodo').mean().reset_index()
-    df_sensori_media['DataLettura'] = df_sensori_media['Periodo'].dt.to_timestamp()
-    df_sensori_media.drop(columns=['Periodo'], inplace=True)
-    display_line_chart("Temperatura Media nel Tempo", df_sensori_media, 'DataLettura', 'Valore')
+    df_zone = pd.DataFrame(zone)
+
+    df_merged = df_letturasensori.merge(df_sensori, on="ID_Sensore").merge(df_zone, left_on="ID_Zona", right_on="ID_Zona").drop_duplicates(subset=['Nome'])
+    df_merged = df_merged.sort_values(by='Nome')  # Ordina per nome della zona
+
+    for _, row in df_merged.iterrows():
+        st.metric(label=f"Zona {row['Nome']} - Sensore {row['ID_Sensore']}", value=f"{row['Valore']} °C", delta=None)
 else:
     st.write("Nessun dato trovato per i sensori di temperatura.")
 
@@ -108,3 +108,5 @@ if manutenzioni:
     display_bar_chart("Manutenzioni per Tipo", df_manutenzioni_tipo, 'Tipo', 'Quantità')
 else:
     st.write("Nessun dato trovato per le manutenzioni.")
+
+st.rerun()
