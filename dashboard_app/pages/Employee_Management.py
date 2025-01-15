@@ -11,6 +11,9 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
     time.sleep(2)
     switch_page("Login")
     st.stop()
+    
+# Titolo della pagina
+st.title("Gestione Dipendenti")
 
 # Sidebar menu
 

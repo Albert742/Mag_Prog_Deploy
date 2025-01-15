@@ -16,40 +16,8 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
 # Connessione al database
 session = connessione()
 
-# Funzione per visualizzare un grafico a barre
-def display_bar_chart(title, data, x, y, color=None):
-    fig = px.bar(data, x=x, y=y, color=color, title=title, color_discrete_sequence=px.colors.qualitative.Set3)
-    st.plotly_chart(fig)
-
-# Funzione per visualizzare un grafico a barre con colori diversi per barra
-def display_colored_bar_chart(title, data, x, y, color):
-    fig = px.bar(data, x=x, y=y, color=color, title=title, color_discrete_sequence=px.colors.qualitative.Set3)
-    st.plotly_chart(fig)
-
-# Funzione per visualizzare un grafico a torta
-def display_pie_chart(title, data, names, values):
-    fig = px.pie(data, names=names, values=values, title=title, color_discrete_sequence=px.colors.qualitative.Set3)
-    st.plotly_chart(fig)
-
-# Funzione per visualizzare un grafico a linee
-def display_line_chart(title, data, x, y, color=None):
-    fig = px.line(data, x=x, y=y, color=color, title=title, color_discrete_sequence=px.colors.qualitative.Set3)
-    st.plotly_chart(fig)
-
-# Funzione per visualizzare un grafico a linee della temperatura media per zona
-def display_avg_temp_line_chart(title, data, x, y, color):
-    fig = px.line(data, x=x, y=y, color=color, title=title, color_discrete_sequence=px.colors.qualitative.Set3)
-    st.plotly_chart(fig)
-
-# Funzione per visualizzare un grafico a dispersione
-def display_scatter_chart(title, data, x, y, color=None):
-    fig = px.scatter(data, x=x, y=y, color=color, title=title, color_discrete_sequence=px.colors.qualitative.Bold)
-    st.plotly_chart(fig)
-
-# Funzione per visualizzare un grafico a torta delle zone per tipo
-def display_zone_pie_chart(title, data, names, values):
-    fig = px.pie(data, names=names, values=values, title=title, color_discrete_sequence=px.colors.qualitative.Set3)
-    st.plotly_chart(fig)
+# Titolo della pagina
+st.title("Dashboard Panoramica")
 
 # Sidebar menu
 
@@ -88,6 +56,41 @@ elif ruolo == "Operatore":
 
 
 st.sidebar.success("Naviga in un'altra pagina utilizzando il menu.")
+
+# Funzione per visualizzare un grafico a barre
+def display_bar_chart(title, data, x, y, color=None):
+    fig = px.bar(data, x=x, y=y, color=color, title=title, color_discrete_sequence=px.colors.qualitative.Set3)
+    st.plotly_chart(fig)
+
+# Funzione per visualizzare un grafico a barre con colori diversi per barra
+def display_colored_bar_chart(title, data, x, y, color):
+    fig = px.bar(data, x=x, y=y, color=color, title=title, color_discrete_sequence=px.colors.qualitative.Set3)
+    st.plotly_chart(fig)
+
+# Funzione per visualizzare un grafico a torta
+def display_pie_chart(title, data, names, values):
+    fig = px.pie(data, names=names, values=values, title=title, color_discrete_sequence=px.colors.qualitative.Set3)
+    st.plotly_chart(fig)
+
+# Funzione per visualizzare un grafico a linee
+def display_line_chart(title, data, x, y, color=None):
+    fig = px.line(data, x=x, y=y, color=color, title=title, color_discrete_sequence=px.colors.qualitative.Set3)
+    st.plotly_chart(fig)
+
+# Funzione per visualizzare un grafico a linee della temperatura media per zona
+def display_avg_temp_line_chart(title, data, x, y, color):
+    fig = px.line(data, x=x, y=y, color=color, title=title, color_discrete_sequence=px.colors.qualitative.Set3)
+    st.plotly_chart(fig)
+
+# Funzione per visualizzare un grafico a dispersione
+def display_scatter_chart(title, data, x, y, color=None):
+    fig = px.scatter(data, x=x, y=y, color=color, title=title, color_discrete_sequence=px.colors.qualitative.Bold)
+    st.plotly_chart(fig)
+
+# Funzione per visualizzare un grafico a torta delle zone per tipo
+def display_zone_pie_chart(title, data, names, values):
+    fig = px.pie(data, names=names, values=values, title=title, color_discrete_sequence=px.colors.qualitative.Set3)
+    st.plotly_chart(fig)
 
 # Panoramica Prodotti
 st.write("## Panoramica Prodotti")

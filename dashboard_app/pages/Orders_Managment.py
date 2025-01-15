@@ -12,6 +12,12 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
     switch_page("Login")
     st.stop()
 
+# Connessione al database
+session = connessione()
+
+# Titolo della pagina
+st.title("Gestione Ordini")
+
 # Sidebar menu
 
 # Bottone per il logout
@@ -48,12 +54,6 @@ elif ruolo == "Operatore":
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
 
 st.sidebar.success("Naviga in un'altra pagina utilizzando il menu.")
-
-# Titolo della pagina
-st.title("Gestione Ordini")
-
-# Connessione al database
-session = connessione()
 
 # Visualizza ordini
 ordini = select_recordsSQL(session, "Ordini")

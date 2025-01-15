@@ -11,6 +11,14 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
     time.sleep(2)
     switch_page("Login")
     st.stop()
+    
+# Connessione al database
+session = connessione()
+
+# Titolo della pagina
+st.title("Gestione Manutenzioni")
+
+# Sidebar menu
 
 # Bottone per il logout
 if st.sidebar.button("Log Out"):
@@ -46,12 +54,6 @@ elif ruolo == "Operatore":
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
 
 st.sidebar.success("Naviga in un'altra pagina utilizzando il menu.")
-
-# Titolo della pagina
-st.title("Gestione Manutenzioni")
-
-# Connessione al database
-session = connessione()
 
 # Recupera i dati delle manutenzioni dalle diverse tabelle
 manutenzioni_robot = select_recordsSQL(session, "ManutenzioneRobot")
