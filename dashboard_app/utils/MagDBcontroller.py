@@ -1,8 +1,13 @@
 from sqlalchemy import create_engine, text, insert, MetaData
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError, IntegrityError
+from datetime import datetime
+import os
+import subprocess
+import pymysql
 import time
 import toml
+import shutil
 
 def connessione():
     """
@@ -396,7 +401,7 @@ def populateSQL():
                     # If still not found, try to get the table with the uppercase name
                     table = metadata.tables.get(table_name.upper())
                 return table
-            
+            """
             # Fornitori
             fornitori_table = get_table(metadata, "Fornitori")
             fornitori_data = [
@@ -738,7 +743,7 @@ def populateSQL():
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento delle manutenzioni veicoli: {e}")
-
+            """
             # Dipendenti
             import MagUtils
             id1= MagUtils.create_employee_id("RSSMRA80A01H501R", "Mario", "Rossi", "Amministratore", "2020-01-01")
@@ -925,6 +930,91 @@ def select_recordsSQL(session, nome_tabella, colonne="*", condizione=None, args=
                 return []
     except Exception as e:
         print(f"Errore durante la selezione dei record dalla tabella {nome_tabella}: {e}")
+        return False
+
+import os
+import pymysql
+from datetime import datetime
+
+def backup_database(host, user, password, database, backup_dir):
+    """
+    Crea un backup dell'intero database.
+
+    Args:
+        host (str): L'host del database.
+        user (str): L'utente del database.
+        password (str): La password del database.
+        database (str): Il nome del database.
+        backup_dir (str): La directory in cui salvare il backup.
+
+    Returns:
+        str: Il percorso del file di backup creato.
+    """
+    try:
+        # Crea la directory di backup se non esiste
+        if not os.path.exists(backup_dir):
+            os.makedirs(backup_dir)
+
+        # Nome del file di backup
+        backup_file = os.path.join(backup_dir, f"{database}_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sql")
+
+        # Connetti al database
+        connection = pymysql.connect(host=host, user=user, password=password, database=database)
+        cursor = connection.cursor()
+
+        # Esegui il dump del database
+        with open(backup_file, "w") as f:
+            for line in cursor.execute(f"SHOW TABLES", multi=True):
+                table = line.fetchone()[0]
+                f.write(f"-- Dumping data for table {table}\n")
+                cursor.execute(f"SHOW CREATE TABLE {table}")
+                create_table_stmt = cursor.fetchone()[1]
+                f.write(f"{create_table_stmt};\n\n")
+                cursor.execute(f"SELECT * FROM {table}")
+                for row in cursor.fetchall():
+                    values = ', '.join([f"'{str(value)}'" if value is not None else 'NULL' for value in row])
+                    f.write(f"INSERT INTO {table} VALUES ({values});\n")
+                f.write("\n")
+
+        connection.close()
+        print(f"Backup del database {database} creato con successo: {backup_file}")
+        return backup_file
+    except Exception as e:
+        print(f"Errore durante la creazione del backup del database: {e}")
+        return None
+
+def restore_database(host, user, password, database, backup_file):
+    """
+    Ripristina il database da un file di backup.
+
+    Args:
+        host (str): L'host del database.
+        user (str): L'utente del database.
+        password (str): La password del database.
+        database (str): Il nome del database.
+        backup_file (str): Il percorso del file di backup.
+
+    Returns:
+        bool: True se il ripristino è avvenuto con successo, False altrimenti.
+    """
+    try:
+        # Connetti al database
+        connection = pymysql.connect(host=host, user=user, password=password, database=database)
+        cursor = connection.cursor()
+
+        # Leggi il file di backup e esegui i comandi SQL
+        with open(backup_file, "r") as f:
+            sql_commands = f.read().split(';')
+            for command in sql_commands:
+                if command.strip():
+                    cursor.execute(command)
+
+        connection.commit()
+        connection.close()
+        print(f"Ripristino del database {database} avvenuto con successo da {backup_file}")
+        return True
+    except Exception as e:
+        print(f"Errore durante il ripristino del database: {e}")
         return False
 
 def Test_menu():

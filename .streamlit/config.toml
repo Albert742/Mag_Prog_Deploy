@@ -6,3 +6,5 @@ textColor="#31333F"
 font="sans serif"
 [client]
 showSidebarNavigation = false
+[server]
+runOnSave = true

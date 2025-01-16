@@ -33,6 +33,7 @@ def warehouse_dashboard_home():
         st.sidebar.page_link('pages/Orders_Managment.py', label='Gestione Ordini')
         st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
         st.sidebar.page_link('pages/Allert_Management.py', label='Gestione Allerte')
+        st.sidebar.page_link('pages/Backup_Managment.py', label='Gestione Backup')
         st.sidebar.page_link('pages/Test_Magazzino.py', label='Test Funzionalità')
     elif ruolo == "Tecnico":
         st.sidebar.page_link('Home.py', label='Home')

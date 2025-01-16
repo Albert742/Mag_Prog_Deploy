@@ -15,6 +15,9 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
 # Connessione al database
 session = connessione()
 
+# Gestione Allerte
+st.write("## Gestione Allerte")
+
 # Sidebar menu
 
 # Bottone per il logout
@@ -38,6 +41,7 @@ if ruolo == "Amministratore":
     st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
     st.sidebar.page_link('pages/Orders_Managment.py', label='Gestione Ordini')
     st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
+    st.sidebar.page_link('pages/Backup_Managment.py', label='Gestione Backup')
     st.sidebar.page_link('pages/Test_Magazzino.py', label='Test Funzionalità')
 elif ruolo == "Tecnico":
     st.sidebar.page_link('Home.py', label='Home')
@@ -50,9 +54,6 @@ elif ruolo == "Operatore":
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
 
 st.sidebar.success("Naviga in un'altra pagina utilizzando il menu.")
-
-# Gestione Allerte
-st.write("## Gestione Allerte")
 
 # Letture dei sensori di temperatura e umidità
 letture_sensori = select_recordsSQL(session, "LettureSensori", colonne="ID_Sensore, Tipo, Valore, DataLettura", condizione="Tipo IN ('Temperatura', 'Umidità')", ordina_per="DataLettura DESC")
