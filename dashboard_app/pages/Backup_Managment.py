@@ -1,8 +1,9 @@
+from sqlalchemy import text
 import streamlit as st
 import pandas as pd
 import time
 import os
-from utils.MagDBcontroller import connessione, select_recordsSQL, add_recordSQL, update_recordSQL, delete_recordSQL, backup_database, restore_database
+from utils.MagDBcontroller import connessione, select_recordsSQL, add_recordSQL, update_recordSQL, delete_recordSQL, backup_database, restore_database, get_db_connection
 from utils.MagUtils import log_logout
 from streamlit_extras.switch_page_button import switch_page
 
@@ -56,7 +57,6 @@ elif ruolo == "Operatore":
 
 st.sidebar.success("Naviga in un'altra pagina utilizzando il menu.")
 
-# Funzione per scaricare il file di backup
 def download_backup(file_path):
     with open(file_path, "rb") as file:
         btn = st.download_button(
@@ -70,15 +70,9 @@ def download_backup(file_path):
 # Sezione per creare un backup
 st.write("### Crea Backup")
 if st.button("Crea Backup"):
-    backup_file = backup_database(
-        host="localhost",
-        user="root",
-        password="1234",
-        database="magazzino",
-        backup_dir=os.path.join("C:", "Users", "alber", "Desktop", "testback")
-    )
+    backup_file = backup_database(backup_dir=os.path.join("C:", "Users", "alber", "Desktop", "testback"))
     if backup_file:
-        st.success(f"Backup creato con successo: {backup_file}")
+        st.success(f"Backup creato con successo. Procedi a scaricarlo.")
         download_backup(backup_file)
     else:
         st.error("Errore durante la creazione del backup.")
@@ -87,18 +81,35 @@ if st.button("Crea Backup"):
 st.write("### Ripristina Backup")
 uploaded_file = st.file_uploader("Carica il file di backup", type=["sql"])
 if uploaded_file is not None:
-    temp_backup_path = os.path.join("C:", "Users", "alber", "Desktop", "testback", "temp_backup.sql")
-    with open(temp_backup_path, "wb") as f:
+    with open("temp_backup.sql", "wb") as f:
         f.write(uploaded_file.getbuffer())
     if st.button("Ripristina Backup"):
-        success = restore_database(
-            host="localhost",
-            user="root",
-            password="1234",
-            database="magazzino",
-            backup_file=temp_backup_path
-        )
+        success = restore_database(backup_file="temp_backup.sql")
         if success:
             st.success("Ripristino del database avvenuto con successo.")
         else:
-            st.error("Errore durante il ripristino del database.")
+            st.error("Errore durante il ripristino del database. Controlla il file discrepancies.log per i dettagli.")
+
+# Sezione per gestire le discrepanze
+if os.path.exists("discrepancies.log"):
+    st.write("### Discrepanze trovate")
+    with open("discrepancies.log", "r") as f:
+        discrepancies = f.readlines()
+    for discrepancy in discrepancies:
+        st.write(discrepancy)
+    if st.button("Sovrascrivi dati esistenti"):
+        with open("temp_backup.sql", "r") as f:
+            sql_commands = f.read().split(';')
+            for command in sql_commands:
+                if command.strip():
+                    try:
+                        engine, session = get_db_connection()
+                        with engine.connect() as connection:
+                            connection.execute(text(command))
+                    except Exception as e:
+                        st.error(f"Errore durante l'esecuzione del comando: {command}\nErrore: {e}")
+        st.success("Dati sovrascritti con successo.")
+        os.remove("discrepancies.log")
+    if st.button("Mantieni dati esistenti"):
+        st.success("Dati esistenti mantenuti.")
+        os.remove("discrepancies.log")
