@@ -39,7 +39,7 @@ if ruolo == "Amministratore":
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
     st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
     st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
-    st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
+    st.sidebar.page_link('pages/Internal_Logistic_Managment.py', label='Gestione Logistica Interna')
     st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
     st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
     st.sidebar.page_link('pages/Allert_Management.py', label='Gestione Allerte')
@@ -99,6 +99,6 @@ log_utenti = select_recordsSQL(session, "LogUtenti", colonne="ID_LogUtente, ID_U
 
 if log_utenti:
     df_log_utenti = pd.DataFrame(log_utenti)
-    st.dataframe(df_log_utenti)
+    st.dataframe(df_log_utenti, width=1000)  # Adjust the width as needed
 else:
     st.write("Nessun log utente trovato.")

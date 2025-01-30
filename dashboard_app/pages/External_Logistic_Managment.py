@@ -39,7 +39,7 @@ if ruolo == "Amministratore":
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
     st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
     st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
-    st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
+    st.sidebar.page_link('pages/Internal_Logistic_Managment.py', label='Gestione Logistica Interna')
     st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
     st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
     st.sidebar.page_link('pages/Allert_Management.py', label='Gestione Allerte')
@@ -297,6 +297,114 @@ if st.session_state.get("show_form_delete_fornitore", False):
     elif cancel_button:
         st.session_state.show_form_delete_fornitore = False
         st.rerun()
+        
+
+        
+# Visualizza ordini e dettagli ordini
+ordini = select_recordsSQL(session, "Ordini")
+dettagli_ordini = select_recordsSQL(session, "DettagliOrdini")
+clienti = select_recordsSQL(session, "Clienti")
+fornitori = select_recordsSQL(session, "Fornitori")
+
+if ordini and dettagli_ordini:
+    df_ordini = pd.DataFrame(ordini)
+    df_dettagli_ordini = pd.DataFrame(dettagli_ordini)
+    df_clienti = pd.DataFrame(clienti)
+    df_fornitori = pd.DataFrame(fornitori)
+
+    # Merge con i nomi dei clienti e fornitori
+    df_ordini = df_ordini.merge(df_clienti[['ID_Cliente', 'Nome']], how='left', left_on='ID_Cliente', right_on='ID_Cliente', suffixes=('', '_Cliente'))
+    df_ordini = df_ordini.merge(df_fornitori[['ID_Fornitore', 'Nome']], how='left', left_on='ID_Fornitore', right_on='ID_Fornitore', suffixes=('', '_Fornitore'))
+
+    # Rinomina le colonne per chiarezza
+    df_ordini.rename(columns={'Nome_Cliente': 'Nome Cliente', 'Nome_Fornitore': 'Nome Fornitore'}, inplace=True)
+
+    # Unisci ordini e dettagli ordini
+    df_ordini_completi = df_ordini.merge(df_dettagli_ordini, how='left', left_on='ID_Ordine', right_on='ID_Ordine')
+
+    st.write("### Ordini e Dettagli Ordini")
+    st.dataframe(df_ordini_completi)
+else:
+    st.error("Errore nel recuperare i dati degli ordini o dei dettagli ordini dal database.")
+        
+# Visualizza consegne
+consegne = select_recordsSQL(session, "Consegne")
+if consegne:
+    df_consegne = pd.DataFrame(consegne)
+    st.write("### Consegne")
+    st.dataframe(df_consegne)
+else:
+    st.error("Errore nel recuperare i dati delle consegne dal database.")
+
+# Bottone per mostrare il form di aggiornamento consegna
+if "show_form_update_consegna" not in st.session_state:
+    st.session_state.show_form_update_consegna = False
+if not st.session_state.show_form_update_consegna:
+    if st.button("Aggiorna Consegna"):
+        st.session_state.show_form_update_consegna = True
+        st.rerun()
+
+# Sezione per aggiornare una consegna
+if st.session_state.get("show_form_update_consegna", False):
+    st.write("### Aggiorna Consegna")
+    with st.form(key='consegna_form_update'):
+        id_consegna = st.number_input("ID Consegna", min_value=1)
+        id_ordine = st.number_input("ID Ordine", min_value=1)
+        id_veicolo = st.number_input("ID Veicolo", min_value=1)
+        data_consegna = st.date_input("Data Consegna")
+        stato = st.selectbox("Stato", ['Pianificata', 'In corso', 'Completata', 'Annullata'])
+
+        submit_button = st.form_submit_button(label="Aggiorna Consegna")
+        cancel_button = st.form_submit_button(label="Annulla")
+
+    if submit_button:
+        try:
+            update_recordSQL(session, "Consegne", {
+                "ID_Ordine": id_ordine,
+                "ID_Veicolo": id_veicolo,
+                "DataConsegna": data_consegna,
+                "Stato": stato
+            }, "ID_Consegna = :id_consegna", {"id_consegna": id_consegna})
+            st.success("Consegna aggiornata con successo!")
+            time.sleep(2)
+            st.session_state.show_form_update_consegna = False
+            st.rerun()
+        except Exception as e:
+            st.error(f"Errore durante l'aggiornamento della consegna: {e}")
+    elif cancel_button:
+        st.session_state.show_form_update_consegna = False
+        st.rerun()
+
+# Sezione per aggiornare un veicolo
+if st.session_state.get("show_form_update_veicolo", False):
+    st.write("### Aggiorna Veicolo")
+    with st.form(key='veicolo_form_update'):
+        id_veicolo = st.number_input("ID Veicolo", min_value=1)
+        tipo = st.selectbox("Tipo", ['Bilico', 'Furgone', 'Carrello_Elevatore'])
+        capacita = st.number_input("Capacità", min_value=1)
+        stato = st.selectbox("Stato", ['Disponibile', 'In uso', 'Manutenzione'])
+        targa = st.text_input("Targa")
+
+        submit_button = st.form_submit_button(label="Aggiorna Veicolo")
+        cancel_button = st.form_submit_button(label="Annulla")
+
+    if submit_button:
+        try:
+            update_recordSQL(session, "Veicoli", {
+                "Tipo": tipo,
+                "Capacita": capacita,
+                "Stato": stato,
+                "Targa": targa
+            }, "ID_Veicolo = :id_veicolo", {"id_veicolo": id_veicolo})
+            st.success("Veicolo aggiornato con successo!")
+            time.sleep(2)
+            st.session_state.show_form_update_veicolo = False
+            st.rerun()
+        except Exception as e:
+            st.error(f"Errore durante l'aggiornamento del veicolo: {e}")
+    elif cancel_button:
+        st.session_state.show_form_update_veicolo = False
+        st.rerun()
 
 # Visualizza veicoli
 veicoli = select_recordsSQL(session, "Veicoli")
@@ -351,37 +459,6 @@ if "show_form_update_veicolo" not in st.session_state:
 if not st.session_state.show_form_update_veicolo:
     if st.button("Aggiorna Veicolo"):
         st.session_state.show_form_update_veicolo = True
-        st.rerun()
-
-# Sezione per aggiornare un veicolo
-if st.session_state.get("show_form_update_veicolo", False):
-    st.write("### Aggiorna Veicolo")
-    with st.form(key='veicolo_form_update'):
-        id_veicolo = st.number_input("ID Veicolo", min_value=1)
-        tipo = st.selectbox("Tipo", ['Bilico', 'Furgone', 'Carrello_Elevatore'])
-        capacita = st.number_input("Capacità", min_value=1)
-        stato = st.selectbox("Stato", ['Disponibile', 'In uso', 'Manutenzione'])
-        targa = st.text_input("Targa")
-
-        submit_button = st.form_submit_button(label="Aggiorna Veicolo")
-        cancel_button = st.form_submit_button(label="Annulla")
-
-    if submit_button:
-        try:
-            update_recordSQL(session, "Veicoli", {
-                "Tipo": tipo,
-                "Capacita": capacita,
-                "Stato": stato,
-                "Targa": targa
-            }, "ID_Veicolo = :id_veicolo", {"id_veicolo": id_veicolo})
-            st.success("Veicolo aggiornato con successo!")
-            time.sleep(2)
-            st.session_state.show_form_update_veicolo = False
-            st.rerun()
-        except Exception as e:
-            st.error(f"Errore durante l'aggiornamento del veicolo: {e}")
-    elif cancel_button:
-        st.session_state.show_form_update_veicolo = False
         st.rerun()
 
 # Bottone per mostrare il form di eliminazione veicolo
