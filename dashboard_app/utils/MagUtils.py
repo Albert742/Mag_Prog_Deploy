@@ -57,7 +57,7 @@ def log_logout(id_utente):
         "Tipo": "Logout",
         "Esito": "Successo",
         "IP": ip,
-        "Dettagli": f"Utente {id_utente} ha effettuato il logout con successo."
+        "Dettagli": f"Utente ID: {id_utente} ha effettuato il logout con successo."
     }
     with connessione() as conn:
         if conn:

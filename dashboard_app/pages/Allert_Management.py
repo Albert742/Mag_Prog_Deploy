@@ -55,16 +55,6 @@ elif ruolo == "Operatore":
 
 st.sidebar.success("Naviga in un'altra pagina utilizzando il menu.")
 
-# Letture dei sensori di temperatura e umidità
-letture_sensori = select_recordsSQL(session, "LettureSensori", colonne="ID_Sensore, Tipo, Valore, DataLettura", condizione="Tipo IN ('Temperatura', 'Umidità')", ordina_per="DataLettura DESC")
-
-if letture_sensori:
-    st.write("### Letture dei Sensori di Temperatura e Umidità")
-    df_letture_sensori = pd.DataFrame(letture_sensori)
-    st.dataframe(df_letture_sensori)
-else:
-    st.write("Nessun dato trovato per le letture dei sensori di temperatura e umidità.")
-
 # Controllo scadenza dei lotti
 lotti_scadenza = select_recordsSQL(session, "Lotti", colonne="ID_Lotto, Lotto, Scadenza, QuantitàProdotto", condizione="Scadenza <= CURDATE()", ordina_per="Scadenza ASC")
 
@@ -86,13 +76,6 @@ def add_alert(tipo, tipo_evento, messaggio, id_sensore=None, id_lotto=None):
     }
     add_recordSQL(session, "LogMagazzino", alert_data)
 
-# Analizza le letture dei sensori e crea allerte
-for _, row in df_letture_sensori.iterrows():
-    if row['Tipo'] == 'Temperatura' and (row['Valore'] < 0 or row['Valore'] > 30):
-        add_alert("Alarme", "Temperatura", f"Temperatura anomala rilevata: {row['Valore']} °C", id_sensore=row['ID_Sensore'])
-    elif row['Tipo'] == 'Umidità' and (row['Valore'] < 30 or row['Valore'] > 70):
-        add_alert("Alarme", "Umidità", f"Umidità anomala rilevata: {row['Valore']}%", id_sensore=row['ID_Sensore'])
-
 # Analizza i lotti in scadenza e crea allerte
 for _, row in df_lotti_scadenza.iterrows():
     add_alert("Avviso", "Scadenza Lotto", f"Lotto in scadenza: {row['Lotto']} (Quantità: {row['QuantitàProdotto']})", id_lotto=row['ID_Lotto'])
@@ -106,3 +89,13 @@ if allerte:
     st.dataframe(df_allerte)
 else:
     st.write("Nessuna allerta trovata.")
+
+# Visualizza i log degli utenti
+st.write("### Log Utenti")
+log_utenti = select_recordsSQL(session, "LogUtenti", colonne="ID_LogUtente, ID_Utente, DataOra, Tipo, Esito, Dettagli, IP", ordina_per="DataOra DESC")
+
+if log_utenti:
+    df_log_utenti = pd.DataFrame(log_utenti)
+    st.dataframe(df_log_utenti)
+else:
+    st.write("Nessun log utente trovato.")

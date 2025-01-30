@@ -1,9 +1,8 @@
-from sqlalchemy import create_engine, text, insert, MetaData
+from sqlalchemy import create_engine, text, insert, MetaData, Table
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError, IntegrityError
 from datetime import datetime
 import os
-import pymysql
 import time
 import toml
 
@@ -798,6 +797,30 @@ def get_table_name(session, nome_tabella):
         if table_name.lower() == nome_tabella.lower():
             return table_name
     return None
+
+def add_records_batch(session, nome_tabella, dati):
+    """
+    Inserisce un batch di record nella tabella specificata.
+
+    Args:
+        session (Session): La sessione SQLAlchemy.
+        nome_tabella (str): Il nome della tabella.
+        dati (list): Una lista di dizionari contenenti i dati da inserire.
+
+    Returns:
+        bool: True se l'inserimento è avvenuto con successo, False altrimenti.
+    """
+    try:
+        metadata = MetaData()
+        metadata.reflect(bind=session.bind)
+        table = Table(nome_tabella, metadata, autoload_with=session.bind)
+        session.execute(table.insert(), dati)
+        session.commit()
+        return True
+    except Exception as e:
+        session.rollback()
+        print(f"Errore durante l'inserimento dei record nella tabella {nome_tabella}: {e}")
+        return False
 
 def add_recordSQL(session, nome_tabella, dati):
     """

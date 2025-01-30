@@ -1,12 +1,9 @@
-"""
-Modulo che contiene la pagina di test del magazzino
-"""
 import streamlit as st
 import time
 import random
 import datetime
 import threading
-from utils.MagDBcontroller import connessione, select_recordsSQL, add_recordSQL
+from utils.MagDBcontroller import connessione, select_recordsSQL, add_recordSQL, add_records_batch
 from utils.MagUtils import log_logout
 from streamlit_extras.switch_page_button import switch_page
 
@@ -32,6 +29,9 @@ def generate_sensor_data(temp_range, humidity_range, presence_anomalies, temp_an
 
     record_count = 0
     start_time = time.time()
+    batch_size = 100  
+    batch_data = []
+
     while True:
         for sensore in sensori:
             if duration and (time.time() - start_time) >= duration:
@@ -49,12 +49,29 @@ def generate_sensor_data(temp_range, humidity_range, presence_anomalies, temp_an
                 "Valore": valore,
                 "DataLettura": datetime.datetime.now()
             }
-            success = add_recordSQL(session, "LettureSensori", lettura)
-            if success:
-                record_count += 1
+            batch_data.append(lettura)
+            record_count += 1
+
+            if len(batch_data) >= batch_size:
+                success = add_records_batch(session, "LettureSensori", batch_data)
+                if success:
+                    batch_data = []  # Clear the batch data after successful insert
+                else:
+                    st.session_state.error_message = "Errore durante l'inserimento dei dati."
+                    session.close()
+                    return
 
         if duration and (time.time() - start_time) >= duration:
             break
+
+        if batch_data:
+            success = add_records_batch(session, "LettureSensori", batch_data)
+            if success:
+                batch_data = []  
+            else:
+                st.session_state.error_message = "Errore durante l'inserimento dei dati."
+                session.close()
+                return
 
         time.sleep(5)  # Attendi 5 secondi prima di generare nuovi dati
 
@@ -92,13 +109,7 @@ if ruolo == "Amministratore":
     st.sidebar.page_link('pages/Orders_Managment.py', label='Gestione Ordini')
     st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
     st.sidebar.page_link('pages/Allert_Management.py', label='Gestione Allerte')
-    st.sidebar.page_link('pages/Test_Magazzino.py', label='Test Funzionalità')
-elif ruolo == "Tecnico":
-    st.sidebar.page_link('Home.py', label='Home')
-    st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
-    st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
-    st.sidebar.page_link('pages/Orders_Managment.py', label='Gestione Ordini')
-    st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
+    st.sidebar.page_link('pages/Backup_Managment.py', label='Gestione Backup')
 elif ruolo == "Operatore":
     st.sidebar.page_link('Home.py', label='Home')
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')

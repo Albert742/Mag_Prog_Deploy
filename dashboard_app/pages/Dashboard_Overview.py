@@ -92,140 +92,145 @@ def display_zone_pie_chart(title, data, names, values):
     fig = px.pie(data, names=names, values=values, title=title, color_discrete_sequence=px.colors.qualitative.Set3)
     st.plotly_chart(fig)
 
-# Panoramica Prodotti
-st.write("## Panoramica Prodotti")
-# Visualizza il numero totale di prodotti
-prodotti = select_recordsSQL(session, "Prodotti")
-if prodotti:
-    df_prodotti = pd.DataFrame(prodotti)
-    st.write("### Numero Totale di Prodotti")
-    st.write(len(df_prodotti))
-    # Visualizza un grafico a barre dei prodotti per tipo
-    df_prodotti_tipo = df_prodotti['Tipo'].value_counts().reset_index()
-    df_prodotti_tipo.columns = ['Tipo', 'Quantità']
-    display_bar_chart("Prodotti per Tipo", df_prodotti_tipo, 'Tipo', 'Quantità', color='Tipo')
-# Panoramica Lotti
-st.write("## Panoramica Lotti")
+placeholder = st.empty()
 
-# Visualizza il numero totale di lotti
-lotti = select_recordsSQL(session, "Lotti")
-if lotti:
-    df_lotti = pd.DataFrame(lotti)
-    st.write("### Numero Totale di Lotti")
-    st.write(len(df_lotti))
+with placeholder.container():
     
-    # Visualizza un grafico a dispersione dei lotti per zona
-    lotti = select_recordsSQL(session, "Lotti", colonne="ID_Lotto, ID_Zona, QuantitàProdotto")
+    # Panoramica Prodotti
+    st.write("## Panoramica Prodotti")
+    # Visualizza il numero totale di prodotti
+    prodotti = select_recordsSQL(session, "Prodotti")
+    if prodotti:
+        df_prodotti = pd.DataFrame(prodotti)
+        st.write("### Numero Totale di Prodotti")
+        st.write(len(df_prodotti))
+        # Visualizza un grafico a barre dei prodotti per tipo
+        df_prodotti_tipo = df_prodotti['Tipo'].value_counts().reset_index()
+        df_prodotti_tipo.columns = ['Tipo', 'Quantità']
+        display_bar_chart("Prodotti per Tipo", df_prodotti_tipo, 'Tipo', 'Quantità', color='Tipo')
+    # Panoramica Lotti
+    st.write("## Panoramica Lotti")
+
+    # Visualizza il numero totale di lotti
+    lotti = select_recordsSQL(session, "Lotti")
+    if lotti:
+        df_lotti = pd.DataFrame(lotti)
+        st.write("### Numero Totale di Lotti")
+        st.write(len(df_lotti))
+        
+        # Visualizza un grafico a dispersione dei lotti per zona
+        lotti = select_recordsSQL(session, "Lotti", colonne="ID_Lotto, ID_Zona, QuantitàProdotto")
+        zone = select_recordsSQL(session, "Zone", colonne="ID_Zona, Nome")
+        
+        # Visualizza un grafico a torta dello stato dei lotti
+        df_lotti_stato = df_lotti['Stato'].value_counts().reset_index()
+        df_lotti_stato.columns = ['Stato', 'Count']
+        display_pie_chart("Stato dei Lotti", df_lotti_stato, 'Stato', 'Count')
+        
+        # Visualizza un grafico a linee del numero di lotti ricevuti nel tempo
+        df_lotti['DataRicevimento'] = pd.to_datetime(df_lotti['DataRicevimento'])
+        df_lotti_ricevuti = df_lotti.groupby(df_lotti['DataRicevimento'].dt.to_period('M')).size().reset_index(name='Count')
+        df_lotti_ricevuti['DataRicevimento'] = df_lotti_ricevuti['DataRicevimento'].dt.to_timestamp()
+        display_line_chart("Lotti Ricevuti nel Tempo", df_lotti_ricevuti, 'DataRicevimento', 'Count')
+        
+        # Visualizza un grafico a barre dei lotti per prodotto
+        df_lotti_prodotto = df_lotti['ID_Prodotto'].value_counts().reset_index()
+        df_lotti_prodotto.columns = ['ID_Prodotto', 'Quantità']
+        df_lotti_prodotto = df_lotti_prodotto.merge(df_prodotti[['ID_Prodotto', 'Nome']], on='ID_Prodotto')
+        display_bar_chart("Lotti per Prodotto", df_lotti_prodotto, 'Nome', 'Quantità')
+
+    if lotti and zone:
+        st.write("### Lotti per Zona")
+        df_lotti = pd.DataFrame(lotti)
+        df_zone = pd.DataFrame(zone)
+
+        df_merged = df_lotti.merge(df_zone, on="ID_Zona")
+        display_scatter_chart("Lotti per Zona", df_merged, 'Nome', 'QuantitàProdotto', 'Nome')
+    else:
+            st.write("Nessun dato trovato per i lotti.")
+
+    # Panoramica Generale
+    st.write("## Panoramica Generale")
+
+    # Visualizza la temperatura più recente per zona
+    letturasensori = select_recordsSQL(session, "LettureSensori", colonne="ID_Sensore, DataLettura, Valore", condizione="Tipo = 'Temperatura'", ordina_per="DataLettura DESC")
+    sensori = select_recordsSQL(session, "Sensori", colonne="ID_Sensore, ID_Zona")
     zone = select_recordsSQL(session, "Zone", colonne="ID_Zona, Nome")
-    
-    # Visualizza un grafico a torta dello stato dei lotti
-    df_lotti_stato = df_lotti['Stato'].value_counts().reset_index()
-    df_lotti_stato.columns = ['Stato', 'Count']
-    display_pie_chart("Stato dei Lotti", df_lotti_stato, 'Stato', 'Count')
-    
-    # Visualizza un grafico a linee del numero di lotti ricevuti nel tempo
-    df_lotti['DataRicevimento'] = pd.to_datetime(df_lotti['DataRicevimento'])
-    df_lotti_ricevuti = df_lotti.groupby(df_lotti['DataRicevimento'].dt.to_period('M')).size().reset_index(name='Count')
-    df_lotti_ricevuti['DataRicevimento'] = df_lotti_ricevuti['DataRicevimento'].dt.to_timestamp()
-    display_line_chart("Lotti Ricevuti nel Tempo", df_lotti_ricevuti, 'DataRicevimento', 'Count')
-    
-    # Visualizza un grafico a barre dei lotti per prodotto
-    df_lotti_prodotto = df_lotti['ID_Prodotto'].value_counts().reset_index()
-    df_lotti_prodotto.columns = ['ID_Prodotto', 'Quantità']
-    df_lotti_prodotto = df_lotti_prodotto.merge(df_prodotti[['ID_Prodotto', 'Nome']], on='ID_Prodotto')
-    display_bar_chart("Lotti per Prodotto", df_lotti_prodotto, 'Nome', 'Quantità')
 
-if lotti and zone:
-    st.write("### Lotti per Zona")
-    df_lotti = pd.DataFrame(lotti)
-    df_zone = pd.DataFrame(zone)
+    if letturasensori and sensori and zone:
+        st.write("### Temperatura più recente per Zona")
+        df_letturasensori = pd.DataFrame(letturasensori)
+        df_sensori = pd.DataFrame(sensori)
+        df_zone = pd.DataFrame(zone)
 
-    df_merged = df_lotti.merge(df_zone, on="ID_Zona")
-    display_scatter_chart("Lotti per Zona", df_merged, 'Nome', 'QuantitàProdotto', 'Nome')
-else:
-        st.write("Nessun dato trovato per i lotti.")
+        df_merged = df_letturasensori.merge(df_sensori, on="ID_Sensore").merge(df_zone, left_on="ID_Zona", right_on="ID_Zona").drop_duplicates(subset=['Nome'])
+        df_merged = df_merged.sort_values(by='Nome')  # Ordina per nome della zona
 
-# Panoramica Generale
-st.write("## Panoramica Generale")
+        for _, row in df_merged.iterrows():
+            st.metric(label=f"Zona {row['Nome']} - Sensore {row['ID_Sensore']}", value=f"{row['Valore']} °C", delta=None)
+    else:
+        st.write("Nessun dato trovato per i sensori di temperatura.")
 
-# Visualizza la temperatura più recente per zona
-letturasensori = select_recordsSQL(session, "LettureSensori", colonne="ID_Sensore, DataLettura, Valore", condizione="Tipo = 'Temperatura'", ordina_per="DataLettura DESC")
-sensori = select_recordsSQL(session, "Sensori", colonne="ID_Sensore, ID_Zona")
-zone = select_recordsSQL(session, "Zone", colonne="ID_Zona, Nome")
+    # Visualizza un grafico a linee della temperatura media per zona
+    letturasensori = select_recordsSQL(session, "LettureSensori", colonne="ID_Sensore, DataLettura, Valore", condizione="Tipo = 'Temperatura'")
+    sensori = select_recordsSQL(session, "Sensori", colonne="ID_Sensore, ID_Zona")
+    zone = select_recordsSQL(session, "Zone", colonne="ID_Zona, Nome")
 
-if letturasensori and sensori and zone:
-    st.write("### Temperatura più recente per Zona")
-    df_letturasensori = pd.DataFrame(letturasensori)
-    df_sensori = pd.DataFrame(sensori)
-    df_zone = pd.DataFrame(zone)
+    if letturasensori and sensori and zone:
+        st.write("### Temperatura Media per Zona")
+        df_letturasensori = pd.DataFrame(letturasensori)
+        df_sensori = pd.DataFrame(sensori)
+        df_zone = pd.DataFrame(zone)
 
-    df_merged = df_letturasensori.merge(df_sensori, on="ID_Sensore").merge(df_zone, left_on="ID_Zona", right_on="ID_Zona").drop_duplicates(subset=['Nome'])
-    df_merged = df_merged.sort_values(by='Nome')  # Ordina per nome della zona
+        df_merged = df_letturasensori.merge(df_sensori, on="ID_Sensore").merge(df_zone, left_on="ID_Zona", right_on="ID_Zona")
+        df_avg_temp = df_merged.groupby(['Nome', 'DataLettura'])['Valore'].mean().reset_index()
+        df_avg_temp.columns = ['Zona', 'DataLettura', 'Temperatura Media']
 
-    for _, row in df_merged.iterrows():
-        st.metric(label=f"Zona {row['Nome']} - Sensore {row['ID_Sensore']}", value=f"{row['Valore']} °C", delta=None)
-else:
-    st.write("Nessun dato trovato per i sensori di temperatura.")
+        display_avg_temp_line_chart("Temperatura Media per Zona", df_avg_temp, 'DataLettura', 'Temperatura Media', 'Zona')
+    else:
+        st.write("Nessun dato trovato per i sensori di temperatura.")
 
-# Visualizza un grafico a linee della temperatura media per zona
-letturasensori = select_recordsSQL(session, "LettureSensori", colonne="ID_Sensore, DataLettura, Valore", condizione="Tipo = 'Temperatura'")
-sensori = select_recordsSQL(session, "Sensori", colonne="ID_Sensore, ID_Zona")
-zone = select_recordsSQL(session, "Zone", colonne="ID_Zona, Nome")
+    # Visualizza un grafico a linee delle letture dei sensori di umidità
+    letturasensori = select_recordsSQL(session, "LettureSensori", colonne="ID_Sensore, DataLettura, Valore", condizione="Tipo = 'Umidità'")
+    sensori = select_recordsSQL(session, "Sensori", colonne="ID_Sensore, ID_Zona")
+    zone = select_recordsSQL(session, "Zone", colonne="ID_Zona, Nome")
 
-if letturasensori and sensori and zone:
-    st.write("### Temperatura Media per Zona")
-    df_letturasensori = pd.DataFrame(letturasensori)
-    df_sensori = pd.DataFrame(sensori)
-    df_zone = pd.DataFrame(zone)
+    if letturasensori and sensori and zone:
+        st.write("### Letture Sensori di Umidità")
+        df_letturasensori = pd.DataFrame(letturasensori)
+        df_sensori = pd.DataFrame(sensori)
+        df_zone = pd.DataFrame(zone)
 
-    df_merged = df_letturasensori.merge(df_sensori, on="ID_Sensore").merge(df_zone, left_on="ID_Zona", right_on="ID_Zona")
-    df_avg_temp = df_merged.groupby(['Nome', 'DataLettura'])['Valore'].mean().reset_index()
-    df_avg_temp.columns = ['Zona', 'DataLettura', 'Temperatura Media']
+        df_merged = df_letturasensori.merge(df_sensori, on="ID_Sensore").merge(df_zone, left_on="ID_Zona", right_on="ID_Zona")
+        df_merged = df_merged.sort_values(by='DataLettura')
 
-    display_avg_temp_line_chart("Temperatura Media per Zona", df_avg_temp, 'DataLettura', 'Temperatura Media', 'Zona')
-else:
-    st.write("Nessun dato trovato per i sensori di temperatura.")
+        display_line_chart("Letture Sensori di Umidità", df_merged, 'DataLettura', 'Valore', 'Nome')
+    else:
+        st.write("Nessun dato trovato per i sensori di umidità.")
 
-# Visualizza un grafico a linee delle letture dei sensori di umidità
-letturasensori = select_recordsSQL(session, "LettureSensori", colonne="ID_Sensore, DataLettura, Valore", condizione="Tipo = 'Umidità'")
-sensori = select_recordsSQL(session, "Sensori", colonne="ID_Sensore, ID_Zona")
-zone = select_recordsSQL(session, "Zone", colonne="ID_Zona, Nome")
+    # Visualizza un grafico a barre degli ordini per stato
+    ordini = select_recordsSQL(session, "Ordini")
+    if ordini:
+        st.write("### Dati Ordini")
+        st.write(ordini)  # Stampa i dati degli ordini per debug
+        df_ordini = pd.DataFrame(ordini)
+        df_ordini_stato = df_ordini['Stato'].value_counts().reset_index()
+        df_ordini_stato.columns = ['Stato', 'Quantità']
+        display_colored_bar_chart("Ordini per Stato", df_ordini_stato, 'Stato', 'Quantità', 'Stato')
+    else:
+        st.write("Nessun dato trovato per gli ordini.")
 
-if letturasensori and sensori and zone:
-    st.write("### Letture Sensori di Umidità")
-    df_letturasensori = pd.DataFrame(letturasensori)
-    df_sensori = pd.DataFrame(sensori)
-    df_zone = pd.DataFrame(zone)
-
-    df_merged = df_letturasensori.merge(df_sensori, on="ID_Sensore").merge(df_zone, left_on="ID_Zona", right_on="ID_Zona")
-    df_merged = df_merged.sort_values(by='DataLettura')
-
-    display_line_chart("Letture Sensori di Umidità", df_merged, 'DataLettura', 'Valore', 'Nome')
-else:
-    st.write("Nessun dato trovato per i sensori di umidità.")
-
-# Visualizza un grafico a barre degli ordini per stato
-ordini = select_recordsSQL(session, "Ordini")
-if ordini:
-    st.write("### Dati Ordini")
-    st.write(ordini)  # Stampa i dati degli ordini per debug
-    df_ordini = pd.DataFrame(ordini)
-    df_ordini_stato = df_ordini['Stato'].value_counts().reset_index()
-    df_ordini_stato.columns = ['Stato', 'Quantità']
-    display_colored_bar_chart("Ordini per Stato", df_ordini_stato, 'Stato', 'Quantità', 'Stato')
-else:
-    st.write("Nessun dato trovato per gli ordini.")
-
-# Visualizza un grafico a barre delle manutenzioni per tipo
-manutenzioni = select_recordsSQL(session, "ManutenzioneRobot")
-if manutenzioni:
-    st.write("### Dati Manutenzioni")
-    st.write(manutenzioni)  # Stampa i dati delle manutenzioni per debug
-    df_manutenzioni = pd.DataFrame(manutenzioni)
-    df_manutenzioni_tipo = df_manutenzioni['Tipo'].value_counts().reset_index()
-    df_manutenzioni_tipo.columns = ['Tipo', 'Quantità']
-    display_colored_bar_chart("Manutenzioni per Tipo", df_manutenzioni_tipo, 'Tipo', 'Quantità', 'Tipo')
-else:
-    st.write("Nessun dato trovato per le manutenzioni.")
-
-st.rerun()
+    # Visualizza un grafico a barre delle manutenzioni per tipo
+    manutenzioni = select_recordsSQL(session, "ManutenzioneRobot")
+    if manutenzioni:
+        st.write("### Dati Manutenzioni")
+        st.write(manutenzioni)  # Stampa i dati delle manutenzioni per debug
+        df_manutenzioni = pd.DataFrame(manutenzioni)
+        df_manutenzioni_tipo = df_manutenzioni['Tipo'].value_counts().reset_index()
+        df_manutenzioni_tipo.columns = ['Tipo', 'Quantità']
+        display_colored_bar_chart("Manutenzioni per Tipo", df_manutenzioni_tipo, 'Tipo', 'Quantità', 'Tipo')
+    else:
+        st.write("Nessun dato trovato per le manutenzioni.")
+        
+    st.rerun()
+    time.sleep(5)
