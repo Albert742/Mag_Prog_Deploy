@@ -3,9 +3,10 @@ import time
 import random
 import datetime
 import threading
-from utils.MagDBcontroller import connessione, select_recordsSQL, add_recordSQL, add_records_batch
+from utils.MagDBcontroller import connessione, select_recordsSQL, add_recordSQL, add_records_batch, update_recordSQL
 from utils.MagUtils import log_logout
 from streamlit_extras.switch_page_button import switch_page
+from streamlit_extras.stylable_container import stylable_container
 
 # Verifica autenticazione
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
@@ -82,10 +83,96 @@ def generate_sensor_data(temp_range, humidity_range, presence_anomalies, temp_an
 def start_generating_data(temp_range, humidity_range, presence_anomalies, temp_anomalies, humidity_anomalies, duration):
     threading.Thread(target=generate_sensor_data, args=(temp_range, humidity_range, presence_anomalies, temp_anomalies, humidity_anomalies, duration)).start()
 
+# Funzione per aggiornare i dati dei robot
+def update_robot_data():
+    session = connessione()
+    if not session:
+        st.session_state.error_message = "Errore di connessione al database."
+        return
+
+    robots = select_recordsSQL(session, "Robot")
+    stazioni_ricarica = select_recordsSQL(session, "StazioneRicarica")
+    if not robots:
+        st.session_state.error_message = "Nessun robot trovato."
+        session.close()
+        return
+
+    for robot in robots:
+        stato = random.choice(['Disponibile', 'Occupato', 'Manutenzione'])
+        posizione_attuale = f"Posizione {random.randint(1, 100)}"
+        if stato == 'Manutenzione' and stazioni_ricarica:
+            stazione = random.choice(stazioni_ricarica)
+            posizione_attuale = f"Stazione di Ricarica {stazione['ID_Ricarica']}"
+            update_recordSQL(session, "StazioneRicarica", {"Stato": "Occupata"}, "ID_Ricarica = :stazione_id", {"stazione_id": stazione['ID_Ricarica']})
+
+        update_data = {
+            "Stato": stato,
+            "PosizioneAttuale": posizione_attuale
+        }
+        condizione = "ID_Robot = :robot_id"
+        args = {"robot_id": robot['ID_Robot']}
+        update_recordSQL(session, "Robot", update_data, condizione, args)
+
+    session.close()
+
+# Funzione per aggiornare i dati delle baie di carico/scarico
+def update_baia_data():
+    session = connessione()
+    if not session:
+        st.session_state.error_message = "Errore di connessione al database."
+        return
+
+    baie = select_recordsSQL(session, "BaieCaricoScarico")
+    if not baie:
+        st.session_state.error_message = "Nessuna baia trovata."
+        session.close()
+        return
+
+    for baia in baie:
+        update_data = {
+            "Stato": random.choice(['Libera', 'Occupata', 'Inoperativa'])
+        }
+        condizione = "ID_Baia = :baia_id"
+        args = {"baia_id": baia['ID_Baia']}
+        update_recordSQL(session, "BaieCaricoScarico", update_data, condizione, args)
+
+    session.close()
+
+# Funzione per aggiornare i dati delle stazioni di ricarica
+def update_stazione_ricarica_data():
+    session = connessione()
+    if not session:
+        st.session_state.error_message = "Errore di connessione al database."
+        return
+
+    stazioni = select_recordsSQL(session, "StazioneRicarica")
+    if not stazioni:
+        st.session_state.error_message = "Nessuna stazione di ricarica trovata."
+        session.close()
+        return
+
+    for stazione in stazioni:
+        update_data = {
+            "Stato": random.choice(['Libera', 'Occupata', 'Inoperativa'])
+        }
+        condizione = "ID_Ricarica = :stazione_id"
+        args = {"stazione_id": stazione['ID_Ricarica']}
+        update_recordSQL(session, "StazioneRicarica", update_data, condizione, args)
+
+    session.close()
+
+# Funzione per avviare l'aggiornamento dei dati
+def start_updating_data():
+    threading.Thread(target=update_robot_data).start()
+    threading.Thread(target=update_baia_data).start()
+    threading.Thread(target=update_stazione_ricarica_data).start()
+
 # Titolo della pagina
 st.title("Test Funzionalità Magazzino")
 
 # Sidebar menu
+st.sidebar.title("Menu")
+st.sidebar.write(f"Accesso effettuato da: {st.session_state.get('username', 'Unknown')}")
 
 # Bottone per il logout
 if st.sidebar.button("Log Out"):
@@ -94,10 +181,6 @@ if st.sidebar.button("Log Out"):
     time.sleep(2)
     st.session_state.clear()
     switch_page("Login")
-    
-st.sidebar.write(f"Accesso effettuato da: {st.session_state.get('username', 'Unknown')}")
-
-st.sidebar.title("Menu")
 
 ruolo = st.session_state.get("ruolo", "Guest")
 
@@ -105,8 +188,8 @@ if ruolo == "Amministratore":
     st.sidebar.page_link('Home.py', label='Home')
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
     st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
-    st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
     st.sidebar.page_link('pages/Internal_Logistic_Managment.py', label='Gestione Logistica Interna')
+    st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
     st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
     st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
     st.sidebar.page_link('pages/Allert_Management.py', label='Gestione Allerte')
@@ -125,7 +208,7 @@ elif ruolo == "Operatore":
 
 st.sidebar.success("Naviga in un'altra pagina utilizzando il menu.")
 
-# Form per configurare la generazione dei dati
+# Sezione per la generazione dei dati
 st.write("### Configura Generazione Dati")
 with st.form(key='config_form'):
     temp_range = st.slider("Intervallo Temperatura (°C)", min_value=-10.0, max_value=50.0, value=(15.0, 25.0))
@@ -135,12 +218,30 @@ with st.form(key='config_form'):
     humidity_anomalies = st.checkbox("Includi Anomalie di Umidità", value=False)
     duration = st.number_input("Durata (secondi, 0 per infinito)", min_value=0, value=0)
     submit_button = st.form_submit_button(label="Avvia Generazione Dati")
-
+    with stylable_container(
+        "red",
+        css_styles="""
+        button:hover {
+        background-color: #d9534f;
+        color: #ffffff;
+        border-color: #d43f3a;
+    }""",
+        ):
+        cancel_button = st.form_submit_button(label="Annulla")
 if submit_button:
     if duration == 0:
         st.warning("Attenzione: La generazione dei dati continuerà all'infinito finché l'applicazione non verrà interrotta manualmente.")
     start_generating_data(temp_range, humidity_range, presence_anomalies, temp_anomalies, humidity_anomalies, duration if duration > 0 else None)
     st.rerun()
+elif cancel_button:
+    st.stop()
+    st.rerun()
+
+# Bottone per avviare l'aggiornamento dei dati
+st.write("### Aggiornamento Dati")
+if st.button("Avvia Aggiornamento Dati"):
+    start_updating_data()
+    st.success("Aggiornamento dati avviato con successo.")
 
 # Mostra messaggi di errore o successo
 if "error_message" in st.session_state:

@@ -4,6 +4,7 @@ import time
 from utils.MagDBcontroller import connessione, select_recordsSQL, add_recordSQL, update_recordSQL, delete_recordSQL
 from utils.MagUtils import create_employee_id, log_logout
 from streamlit_extras.switch_page_button import switch_page
+from streamlit_extras.stylable_container import stylable_container
 
 # Verifica autenticazione
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
@@ -38,8 +39,8 @@ if ruolo == "Amministratore":
     st.sidebar.page_link('Home.py', label='Home')
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
     st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
-    st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
     st.sidebar.page_link('pages/Internal_Logistic_Managment.py', label='Gestione Logistica Interna')
+    st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
     st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
     st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
     st.sidebar.page_link('pages/Allert_Management.py', label='Gestione Allerte')
@@ -86,7 +87,16 @@ if st.session_state.get("show_form_add_cliente", False):
         partita_iva = st.text_input("Partita IVA")
 
         submit_button = st.form_submit_button(label="Aggiungi Cliente")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
 
     if submit_button:
         try:
@@ -127,7 +137,16 @@ if st.session_state.get("show_form_update_cliente", False):
         partita_iva = st.text_input("Partita IVA")
 
         submit_button = st.form_submit_button(label="Aggiorna Cliente")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
 
     if submit_button:
         try:
@@ -163,7 +182,16 @@ if st.session_state.get("show_form_delete_cliente", False):
         id_cliente = st.number_input("ID Cliente", min_value=1)
 
         submit_button = st.form_submit_button(label="Elimina Cliente")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
 
     if submit_button:
         try:
@@ -206,7 +234,16 @@ if st.session_state.get("show_form_add_fornitore", False):
         partita_iva = st.text_input("Partita IVA")
 
         submit_button = st.form_submit_button(label="Aggiungi Fornitore")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
 
     if submit_button:
         try:
@@ -245,9 +282,18 @@ if st.session_state.get("show_form_update_fornitore", False):
         telefono = st.text_input("Telefono")
         email = st.text_input("Email")
         partita_iva = st.text_input("Partita IVA")
-
+        
         submit_button = st.form_submit_button(label="Aggiorna Fornitore")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
 
     if submit_button:
         try:
@@ -283,7 +329,16 @@ if st.session_state.get("show_form_delete_fornitore", False):
         id_fornitore = st.number_input("ID Fornitore", min_value=1)
 
         submit_button = st.form_submit_button(label="Elimina Fornitore")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
 
     if submit_button:
         try:
@@ -297,9 +352,7 @@ if st.session_state.get("show_form_delete_fornitore", False):
     elif cancel_button:
         st.session_state.show_form_delete_fornitore = False
         st.rerun()
-        
 
-        
 # Visualizza ordini e dettagli ordini
 ordini = select_recordsSQL(session, "Ordini")
 dettagli_ordini = select_recordsSQL(session, "DettagliOrdini")
@@ -347,6 +400,17 @@ if not st.session_state.show_form_update_consegna:
 # Sezione per aggiornare una consegna
 if st.session_state.get("show_form_update_consegna", False):
     st.write("### Aggiorna Consegna")
+    
+    # Custom CSS for the cancel button
+    st.markdown("""
+        <style>
+        .stButton > button:hover {
+            background-color: red;
+            color: white;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
     with st.form(key='consegna_form_update'):
         id_consegna = st.number_input("ID Consegna", min_value=1)
         id_ordine = st.number_input("ID Ordine", min_value=1)
@@ -355,7 +419,34 @@ if st.session_state.get("show_form_update_consegna", False):
         stato = st.selectbox("Stato", ['Pianificata', 'In corso', 'Completata', 'Annullata'])
 
         submit_button = st.form_submit_button(label="Aggiorna Consegna")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
+
+    if submit_button:
+        try:
+            update_recordSQL(session, "Consegne", {
+                "ID_Ordine": id_ordine,
+                "ID_Veicolo": id_veicolo,
+                "DataConsegna": data_consegna,
+                "Stato": stato
+            }, "ID_Consegna = :id_consegna", {"id_consegna": id_consegna})
+            st.success("Consegna aggiornata con successo!")
+            time.sleep(2)
+            st.session_state.show_form_update_consegna = False
+            st.rerun()
+        except Exception as e:
+            st.error(f"Errore durante l'aggiornamento della consegna: {e}")
+    elif cancel_button:
+        st.session_state.show_form_update_consegna = False
+        st.rerun()
 
     if submit_button:
         try:
@@ -386,7 +477,16 @@ if st.session_state.get("show_form_update_veicolo", False):
         targa = st.text_input("Targa")
 
         submit_button = st.form_submit_button(label="Aggiorna Veicolo")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
 
     if submit_button:
         try:
@@ -433,7 +533,16 @@ if st.session_state.get("show_form_add_veicolo", False):
         targa = st.text_input("Targa")
 
         submit_button = st.form_submit_button(label="Aggiungi Veicolo")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
 
     if submit_button:
         try:
@@ -476,7 +585,16 @@ if st.session_state.get("show_form_delete_veicolo", False):
         id_veicolo = st.number_input("ID Veicolo", min_value=1)
 
         submit_button = st.form_submit_button(label="Elimina Veicolo")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
 
     if submit_button:
         try:

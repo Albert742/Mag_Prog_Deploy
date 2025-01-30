@@ -29,8 +29,8 @@ def warehouse_dashboard_home():
         st.sidebar.page_link('Home.py', label='Home')
         st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
         st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
-        st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
         st.sidebar.page_link('pages/Internal_Logistic_Managment.py', label='Gestione Logistica Interna')
+        st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
         st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
         st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
         st.sidebar.page_link('pages/Allert_Management.py', label='Gestione Allerte')
@@ -46,7 +46,6 @@ def warehouse_dashboard_home():
     elif ruolo == "Operatore":
         st.sidebar.page_link('Home.py', label='Home')
         st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
-
 
     # Contenuto della pagina
     st.image("logo.jpg", use_container_width=True)

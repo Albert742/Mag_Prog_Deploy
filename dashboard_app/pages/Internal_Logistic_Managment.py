@@ -4,6 +4,7 @@ import time
 from utils.MagDBcontroller import connessione, select_recordsSQL, add_recordSQL, update_recordSQL, delete_recordSQL
 from utils.MagUtils import create_employee_id, log_logout
 from streamlit_extras.switch_page_button import switch_page
+from streamlit_extras.stylable_container import stylable_container
 
 # Verifica autenticazione
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
@@ -38,8 +39,8 @@ if ruolo == "Amministratore":
     st.sidebar.page_link('Home.py', label='Home')
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
     st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
-    st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
     st.sidebar.page_link('pages/Internal_Logistic_Managment.py', label='Gestione Logistica Interna')
+    st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
     st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
     st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
     st.sidebar.page_link('pages/Allert_Management.py', label='Gestione Allerte')
@@ -57,6 +58,87 @@ elif ruolo == "Operatore":
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
 
 st.sidebar.success("Naviga in un'altra pagina utilizzando il menu.")
+
+# Visualizza zone
+zone = select_recordsSQL(session, "Zone")
+if zone:
+    df_zone = pd.DataFrame(zone)
+    st.write("### Zone")
+    st.dataframe(df_zone)
+else:
+    st.error("Errore nel recuperare i dati delle zone dal database.")
+
+# Visualizza scaffalature
+scaffalature = select_recordsSQL(session, "Scaffalature")
+if scaffalature:
+    df_scaffalature = pd.DataFrame(scaffalature)
+    st.write("### Scaffalature")
+    st.dataframe(df_scaffalature)
+else:
+    st.error("Errore nel recuperare i dati delle scaffalature dal database.")
+
+# Visualizza baie di carico/scarico
+baie = select_recordsSQL(session, "BaieCaricoScarico")
+if baie:
+    df_baie = pd.DataFrame(baie)
+    st.write("### Baie di Carico/Scarico")
+    st.dataframe(df_baie)
+else:
+    st.error("Errore nel recuperare i dati delle baie di carico/scarico dal database.")
+
+# Visualizza stazioni di ricarica
+stazioni_ricarica = select_recordsSQL(session, "StazioneRicarica")
+if stazioni_ricarica:
+    df_stazioni_ricarica = pd.DataFrame(stazioni_ricarica)
+    st.write("### Stazioni di Ricarica")
+    st.dataframe(df_stazioni_ricarica)
+else:
+    st.error("Errore nel recuperare i dati delle stazioni di ricarica dal database.")
+
+# Bottone per mostrare il form di aggiunta stazione di ricarica
+if "show_form_add_stazione_ricarica" not in st.session_state:
+    st.session_state.show_form_add_stazione_ricarica = False
+if not st.session_state.show_form_add_stazione_ricarica:
+    if st.button("Aggiungi Stazione di Ricarica"):
+        st.session_state.show_form_add_stazione_ricarica = True
+        st.rerun()
+
+# Sezione per aggiungere una stazione di ricarica
+if st.session_state.get("show_form_add_stazione_ricarica", False):
+    st.write("### Aggiungi Stazione di Ricarica")
+    with st.form(key='stazione_ricarica_form_add'):
+        zona_id = st.number_input("ID Zona", min_value=1)
+        nome = st.text_input("Nome")
+        stato = st.selectbox("Stato", ['Libera', 'Occupata', 'Inoperativa'])
+
+        submit_button = st.form_submit_button(label="Aggiungi Stazione di Ricarica")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
+
+    if submit_button:
+        try:
+            add_recordSQL(session, "StazioneRicarica", {
+                "ZonaID": zona_id,
+                "Nome": nome,
+                "Stato": stato
+            })
+            st.success("Stazione di ricarica aggiunta con successo!")
+            time.sleep(2)
+            st.session_state.show_form_add_stazione_ricarica = False
+            st.rerun()
+        except Exception as e:
+            st.error(f"Errore durante l'aggiunta della stazione di ricarica: {e}")
+    elif cancel_button:
+        st.session_state.show_form_add_stazione_ricarica = False
+        st.rerun()
 
 # Visualizza robot
 robot = select_recordsSQL(session, "Robot")
@@ -88,7 +170,16 @@ if st.session_state.get("show_form_add_robot", False):
         id_ricarica = st.number_input("ID Ricarica", min_value=1)
 
         submit_button = st.form_submit_button(label="Aggiungi Robot")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
 
     if submit_button:
         try:
@@ -109,98 +200,6 @@ if st.session_state.get("show_form_add_robot", False):
             st.error(f"Errore durante l'aggiunta del robot: {e}")
     elif cancel_button:
         st.session_state.show_form_add_robot = False
-        st.rerun()
-
-# Visualizza stazioni di ricarica
-stazioni_ricarica = select_recordsSQL(session, "StazioneRicarica")
-if stazioni_ricarica:
-    df_stazioni_ricarica = pd.DataFrame(stazioni_ricarica)
-    st.write("### Stazioni di Ricarica")
-    st.dataframe(df_stazioni_ricarica)
-else:
-    st.error("Errore nel recuperare i dati delle stazioni di ricarica dal database.")
-
-# Bottone per mostrare il form di aggiunta stazione di ricarica
-if "show_form_add_stazione_ricarica" not in st.session_state:
-    st.session_state.show_form_add_stazione_ricarica = False
-if not st.session_state.show_form_add_stazione_ricarica:
-    if st.button("Aggiungi Stazione di Ricarica"):
-        st.session_state.show_form_add_stazione_ricarica = True
-        st.rerun()
-
-# Sezione per aggiungere una stazione di ricarica
-if st.session_state.get("show_form_add_stazione_ricarica", False):
-    st.write("### Aggiungi Stazione di Ricarica")
-    with st.form(key='stazione_ricarica_form_add'):
-        zona_id = st.number_input("ID Zona", min_value=1)
-        nome = st.text_input("Nome")
-        stato = st.selectbox("Stato", ['Libera', 'Occupata', 'Inoperativa'])
-
-        submit_button = st.form_submit_button(label="Aggiungi Stazione di Ricarica")
-        cancel_button = st.form_submit_button(label="Annulla")
-
-    if submit_button:
-        try:
-            add_recordSQL(session, "StazioneRicarica", {
-                "ZonaID": zona_id,
-                "Nome": nome,
-                "Stato": stato
-            })
-            st.success("Stazione di ricarica aggiunta con successo!")
-            time.sleep(2)
-            st.session_state.show_form_add_stazione_ricarica = False
-            st.rerun()
-        except Exception as e:
-            st.error(f"Errore durante l'aggiunta della stazione di ricarica: {e}")
-    elif cancel_button:
-        st.session_state.show_form_add_stazione_ricarica = False
-        st.rerun()
-
-# Visualizza baie di carico/scarico
-baie = select_recordsSQL(session, "BaieCaricoScarico")
-if baie:
-    df_baie = pd.DataFrame(baie)
-    st.write("### Baie di Carico/Scarico")
-    st.dataframe(df_baie)
-else:
-    st.error("Errore nel recuperare i dati delle baie di carico/scarico dal database.")
-
-# Bottone per mostrare il form di aggiunta baia di carico/scarico
-if "show_form_add_baia" not in st.session_state:
-    st.session_state.show_form_add_baia = False
-if not st.session_state.show_form_add_baia:
-    if st.button("Aggiungi Baia di Carico/Scarico"):
-        st.session_state.show_form_add_baia = True
-        st.rerun()
-
-# Sezione per aggiungere una baia di carico/scarico
-if st.session_state.get("show_form_add_baia", False):
-    st.write("### Aggiungi Baia di Carico/Scarico")
-    with st.form(key='baia_form_add'):
-        zona_id = st.number_input("ID Zona", min_value=1)
-        nome = st.text_input("Nome")
-        tipo = st.selectbox("Tipo", ['Carico', 'Scarico'])
-        stato = st.selectbox("Stato", ['Libera', 'Occupata', 'Manutenzione'])
-
-        submit_button = st.form_submit_button(label="Aggiungi Baia di Carico/Scarico")
-        cancel_button = st.form_submit_button(label="Annulla")
-
-    if submit_button:
-        try:
-            add_recordSQL(session, "BaieCaricoScarico", {
-                "ZonaID": zona_id,
-                "Nome": nome,
-                "Tipo": tipo,
-                "Stato": stato
-            })
-            st.success("Baia di carico/scarico aggiunta con successo!")
-            time.sleep(2)
-            st.session_state.show_form_add_baia = False
-            st.rerun()
-        except Exception as e:
-            st.error(f"Errore durante l'aggiunta della baia di carico/scarico: {e}")
-    elif cancel_button:
-        st.session_state.show_form_add_baia = False
         st.rerun()
 
 # Visualizza richieste di movimento
@@ -233,7 +232,16 @@ if st.session_state.get("show_form_add_richiesta_movimento", False):
         data_richiesta = st.date_input("Data Richiesta")
 
         submit_button = st.form_submit_button(label="Aggiungi Richiesta di Movimento")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
 
     if submit_button:
         try:
@@ -289,7 +297,16 @@ if st.session_state.get("show_form_add_dettaglio_movimento", False):
         tipo_movimento = st.selectbox("Tipo Movimento", ['Entrata', 'Uscita', 'Spostamento'])
 
         submit_button = st.form_submit_button(label="Aggiungi Dettaglio Movimento")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
 
     if submit_button:
         try:

@@ -39,8 +39,8 @@ if ruolo == "Amministratore":
     st.sidebar.page_link('Home.py', label='Home')
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
     st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
-    st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
     st.sidebar.page_link('pages/Internal_Logistic_Managment.py', label='Gestione Logistica Interna')
+    st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
     st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
     st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
     st.sidebar.page_link('pages/Allert_Management.py', label='Gestione Allerte')
@@ -56,7 +56,6 @@ elif ruolo == "Tecnico":
 elif ruolo == "Operatore":
     st.sidebar.page_link('Home.py', label='Home')
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
-
 
 st.sidebar.success("Naviga in un'altra pagina utilizzando il menu.")
 
@@ -214,8 +213,6 @@ with placeholder.container():
     # Visualizza un grafico a barre degli ordini per stato
     ordini = select_recordsSQL(session, "Ordini")
     if ordini:
-        st.write("### Dati Ordini")
-        st.write(ordini)  # Stampa i dati degli ordini per debug
         df_ordini = pd.DataFrame(ordini)
         df_ordini_stato = df_ordini['Stato'].value_counts().reset_index()
         df_ordini_stato.columns = ['Stato', 'Quantità']
@@ -226,8 +223,6 @@ with placeholder.container():
     # Visualizza un grafico a barre delle manutenzioni per tipo
     manutenzioni = select_recordsSQL(session, "ManutenzioneRobot")
     if manutenzioni:
-        st.write("### Dati Manutenzioni")
-        st.write(manutenzioni)  # Stampa i dati delle manutenzioni per debug
         df_manutenzioni = pd.DataFrame(manutenzioni)
         df_manutenzioni_tipo = df_manutenzioni['Tipo'].value_counts().reset_index()
         df_manutenzioni_tipo.columns = ['Tipo', 'Quantità']
@@ -235,6 +230,6 @@ with placeholder.container():
     else:
         st.write("Nessun dato trovato per le manutenzioni.")
     
-    time.sleep(25)    
+    time.sleep(10)    
     st.rerun()
 

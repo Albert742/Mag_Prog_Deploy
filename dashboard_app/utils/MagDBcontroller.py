@@ -1025,40 +1025,38 @@ def restore_database(backup_file):
         backup_file (str): Il percorso del file di backup.
 
     Returns:
-        bool: True se il ripristino è avvenuto con successo, False altrimenti.
+        tuple: (bool, str) True se il ripristino è avvenuto con successo, False altrimenti, e un messaggio.
     """
     try:
         engine, session = get_db_connection()
-        discrepancies = []
 
         with engine.connect() as connection:
-            with open(backup_file, "r") as f:
-                sql_commands = f.read().split(';')
-                for command in sql_commands:
-                    if command.strip():
-                        try:
-                            connection.execute(text(command))
-                        except Exception as e:
-                            if "already exists" in str(e):
-                                print(f"Tabella già esistente, salto la creazione: {command.split()[2]}")
-                            elif "Duplicate entry" in str(e):
-                                print(f"Duplicate entry found: {command}")
-                                discrepancies.append(command)
-                            else:
-                                raise e
+            # Read the SQL commands from the backup file
+            with open(backup_file, "r") as file:
+                sql_commands = file.read()
 
-        if discrepancies:
-            with open("discrepancies.log", "w") as log_file:
-                for discrepancy in discrepancies:
-                    log_file.write(discrepancy + "\n")
-            print("Discrepanze trovate. Controlla il file discrepancies.log per i dettagli.")
-            return False
+            # Split the commands by semicolon to handle them individually
+            commands = sql_commands.split(';')
+            duplicate_data = False
 
-        print(f"Ripristino del database avvenuto con successo da {backup_file}")
-        return True
+            for command in commands:
+                if command.strip():
+                    try:
+                        connection.execute(text(command))
+                    except IntegrityError:
+                        duplicate_data = True
+                        continue
+                    except OperationalError:
+                        duplicate_data = True
+                        continue
+
+        if duplicate_data:
+            return True, "Ripristino completato con alcuni dati già esistenti o duplicati."
+        return True, "Ripristino completato con successo."
     except Exception as e:
-        print(f"Errore durante il ripristino del database: {e}")
-        return False
+        error_message = f"Errore durante il ripristino del database"
+        print(error_message)
+        return False, error_message
 
 def Test_menu():
     while True:

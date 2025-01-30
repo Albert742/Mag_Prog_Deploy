@@ -6,6 +6,7 @@ from sqlalchemy import text
 from utils.MagDBcontroller import connessione, select_recordsSQL, update_recordSQL, add_recordSQL, delete_recordSQL
 from utils.MagUtils import log_logout
 from streamlit_extras.switch_page_button import switch_page
+from streamlit_extras.stylable_container import stylable_container
 
 # Verifica autenticazione
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
@@ -40,8 +41,8 @@ if ruolo == "Amministratore":
     st.sidebar.page_link('Home.py', label='Home')
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
     st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
-    st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
     st.sidebar.page_link('pages/Internal_Logistic_Managment.py', label='Gestione Logistica Interna')
+    st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
     st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
     st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
     st.sidebar.page_link('pages/Allert_Management.py', label='Gestione Allerte')
@@ -198,7 +199,16 @@ if st.session_state.get("show_form_update_prodotto", False):
                 
                 # Crea il bottone per inviare il form
                 submit_button = st.form_submit_button(label="Aggiorna Prodotto")
-                cancel_button = st.form_submit_button(label="Annulla")
+                with stylable_container(
+                        "red",
+                        css_styles="""
+                        button:hover {
+                        background-color: #d9534f;
+                        color: #ffffff;
+                        border-color: #d43f3a;
+                    }""",
+                ):
+                    cancel_button = st.form_submit_button(label="Annulla")
 
             if submit_button:
                 # Aggiorna prodotto
@@ -239,7 +249,16 @@ if st.session_state.get("show_form_add_prodotto", False):
 
         # Crea il bottone per inviare il form
         submit_button = st.form_submit_button(label="Aggiungi Prodotto")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
 
         if submit_button:
             if nome and produttore and tipo and quantita_confezione and unita_misura and id_fornitore:
@@ -273,7 +292,16 @@ if st.session_state.get("show_form_delete_prodotto", False):
 
         # Crea il bottone per inviare il form
         submit_button = st.form_submit_button(label="Elimina Prodotto")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
 
         if submit_button:
             if prodotto_id:
@@ -329,7 +357,16 @@ if st.session_state.get("show_form_update_lotti", False):
                 
                 # Crea il bottone per inviare il form
                 submit_button = st.form_submit_button(label="Aggiorna Stato Lotto")
-                cancel_button = st.form_submit_button(label="Annulla")
+                with stylable_container(
+                        "red",
+                        css_styles="""
+                        button:hover {
+                        background-color: #d9534f;
+                        color: #ffffff;
+                        border-color: #d43f3a;
+                    }""",
+                ):
+                    cancel_button = st.form_submit_button(label="Annulla")
 
             if submit_button:
                 # Aggiorna stato del lotto
@@ -381,7 +418,16 @@ if st.session_state.get("show_form_add_lotto", False):
 
         # Crea il bottone per inviare il form
         submit_button = st.form_submit_button(label="Aggiungi Lotto")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
 
         if submit_button:
             if id_prodotto and id_fornitore and id_zona and id_scaffalatura and lotto and scadenza and quantita_prodotto and peso_lotto and prezzo_acquisto and valore_lotto and data_prenotazione and data_ricevimento and stato:
@@ -415,7 +461,16 @@ if st.session_state.get("show_form_delete_lotto", False):
 
         # Crea il bottone per inviare il form
         submit_button = st.form_submit_button(label="Elimina Lotto")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
 
         if submit_button:
             if lotto_id:

@@ -4,6 +4,7 @@ import time
 from utils.MagDBcontroller import connessione, select_recordsSQL, add_recordSQL, update_recordSQL, delete_recordSQL
 from utils.MagUtils import log_logout
 from streamlit_extras.switch_page_button import switch_page
+from streamlit_extras.stylable_container import stylable_container
 
 # Verifica autenticazione
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
@@ -38,8 +39,8 @@ if ruolo == "Amministratore":
     st.sidebar.page_link('Home.py', label='Home')
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
     st.sidebar.page_link('pages/Inventory_Management.py', label='Gestione Inventario')
-    st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
     st.sidebar.page_link('pages/Internal_Logistic_Managment.py', label='Gestione Logistica Interna')
+    st.sidebar.page_link('pages/External_Logistic_Managment.py', label='Gestione Logistica Esterna')
     st.sidebar.page_link('pages/Employee_Management.py', label='Gestione Dipendenti')
     st.sidebar.page_link('pages/Maintenance_Management.py', label='Gestione Manutenzioni')
     st.sidebar.page_link('pages/Allert_Management.py', label='Gestione Allerte')
@@ -108,7 +109,16 @@ if st.session_state.get("show_form_add_manutenzione", False):
             note = st.text_area("Note")
 
             submit_button = st.form_submit_button(label="Aggiungi Manutenzione")
-            cancel_button = st.form_submit_button(label="Annulla")
+            with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+            ):
+                cancel_button = st.form_submit_button(label="Annulla")
 
             if submit_button:
                 try:
@@ -136,7 +146,16 @@ if st.session_state.get("show_form_add_manutenzione", False):
             note = st.text_area("Note")
 
             submit_button = st.form_submit_button(label="Aggiungi Manutenzione")
-            cancel_button = st.form_submit_button(label="Annulla")
+            with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+            ):
+                cancel_button = st.form_submit_button(label="Annulla")
 
             if submit_button:
                 try:
@@ -164,7 +183,16 @@ if st.session_state.get("show_form_add_manutenzione", False):
             note = st.text_area("Note")
 
             submit_button = st.form_submit_button(label="Aggiungi Manutenzione")
-            cancel_button = st.form_submit_button(label="Annulla")
+            with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+            ):
+                cancel_button = st.form_submit_button(label="Annulla")
 
             if submit_button:
                 try:
@@ -192,7 +220,16 @@ if st.session_state.get("show_form_add_manutenzione", False):
             note = st.text_area("Note")
 
             submit_button = st.form_submit_button(label="Aggiungi Manutenzione")
-            cancel_button = st.form_submit_button(label="Annulla")
+            with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+            ):
+                cancel_button = st.form_submit_button(label="Annulla")
 
             if submit_button:
                 try:
@@ -235,7 +272,16 @@ if st.session_state.get("show_form_update_manutenzione", False):
             note = st.text_area("Note")
 
             submit_button = st.form_submit_button(label="Aggiorna Manutenzione")
-            cancel_button = st.form_submit_button(label="Annulla")
+            with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+            ):
+                cancel_button = st.form_submit_button(label="Annulla")
 
             if submit_button:
                 try:
@@ -263,7 +309,16 @@ if st.session_state.get("show_form_update_manutenzione", False):
             note = st.text_area("Note")
 
             submit_button = st.form_submit_button(label="Aggiorna Manutenzione")
-            cancel_button = st.form_submit_button(label="Annulla")
+            with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+            ):
+                cancel_button = st.form_submit_button(label="Annulla")
 
             if submit_button:
                 try:
@@ -291,7 +346,16 @@ if st.session_state.get("show_form_update_manutenzione", False):
             note = st.text_area("Note")
 
             submit_button = st.form_submit_button(label="Aggiorna Manutenzione")
-            cancel_button = st.form_submit_button(label="Annulla")
+            with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+            ):
+                cancel_button = st.form_submit_button(label="Annulla")
 
             if submit_button:
                 try:
@@ -319,7 +383,16 @@ if st.session_state.get("show_form_update_manutenzione", False):
             note = st.text_area("Note")
 
             submit_button = st.form_submit_button(label="Aggiorna Manutenzione")
-            cancel_button = st.form_submit_button(label="Annulla")
+            with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+            ):
+                cancel_button = st.form_submit_button(label="Annulla")
 
             if submit_button:
                 try:
@@ -357,7 +430,16 @@ if st.session_state.get("show_form_delete_manutenzione", False):
         id_manutenzione = st.number_input("ID Manutenzione", min_value=1)
 
         submit_button = st.form_submit_button(label="Elimina Manutenzione")
-        cancel_button = st.form_submit_button(label="Annulla")
+        with stylable_container(
+                "red",
+                css_styles="""
+                button:hover {
+                background-color: #d9534f;
+                color: #ffffff;
+                border-color: #d43f3a;
+            }""",
+        ):
+            cancel_button = st.form_submit_button(label="Annulla")
 
     if submit_button:
         try:
