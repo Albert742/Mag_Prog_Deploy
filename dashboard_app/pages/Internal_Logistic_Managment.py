@@ -1,8 +1,8 @@
-import streamlit as st
 import pandas as pd
+import streamlit as st
 import time
 from utils.MagDBcontroller import connessione, select_recordsSQL, add_recordSQL, update_recordSQL, delete_recordSQL
-from utils.MagUtils import log_logout
+from utils.MagUtils import create_employee_id, log_logout
 from streamlit_extras.switch_page_button import switch_page
 
 # Verifica autenticazione
@@ -15,8 +15,8 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
 # Connessione al database
 session = connessione()
 
-# Gestione Allerte
-st.write("## Gestione Allerte")
+# Titolo della pagina
+st.title("Gestione Logistica Interna")
 
 # Sidebar menu
 
@@ -57,48 +57,3 @@ elif ruolo == "Operatore":
     st.sidebar.page_link('pages/Dashboard_Overview.py', label='Panoramica Dashboard')
 
 st.sidebar.success("Naviga in un'altra pagina utilizzando il menu.")
-
-# Controllo scadenza dei lotti
-lotti_scadenza = select_recordsSQL(session, "Lotti", colonne="ID_Lotto, Lotto, Scadenza, QuantitàProdotto", condizione="Scadenza <= CURDATE()", ordina_per="Scadenza ASC")
-
-if lotti_scadenza:
-    st.write("### Lotti in Scadenza")
-    df_lotti_scadenza = pd.DataFrame(lotti_scadenza)
-    st.dataframe(df_lotti_scadenza)
-else:
-    st.write("Nessun lotto in scadenza trovato.")
-
-# Aggiungi una nuova allerta
-def add_alert(tipo, tipo_evento, messaggio, id_sensore=None, id_lotto=None):
-    alert_data = {
-        "TipoNotifica": tipo,
-        "TipoEvento": tipo_evento,
-        "Messaggio": messaggio,
-        "ID_Sensore": id_sensore,
-        "ID_Lotto": id_lotto
-    }
-    add_recordSQL(session, "LogMagazzino", alert_data)
-
-# Analizza i lotti in scadenza e crea allerte
-for _, row in df_lotti_scadenza.iterrows():
-    add_alert("Avviso", "Scadenza Lotto", f"Lotto in scadenza: {row['Lotto']} (Quantità: {row['QuantitàProdotto']})", id_lotto=row['ID_Lotto'])
-
-# Visualizza le allerte
-allerte = select_recordsSQL(session, "LogMagazzino", colonne="ID_LogMagazzino, TipoNotifica, TipoEvento, Messaggio, DataOra", ordina_per="DataOra DESC")
-
-if allerte:
-    st.write("### Allerte")
-    df_allerte = pd.DataFrame(allerte)
-    st.dataframe(df_allerte)
-else:
-    st.write("Nessuna allerta trovata.")
-
-# Visualizza i log degli utenti
-st.write("### Log Utenti")
-log_utenti = select_recordsSQL(session, "LogUtenti", colonne="ID_LogUtente, ID_Utente, DataOra, Tipo, Esito, Dettagli, IP", ordina_per="DataOra DESC")
-
-if log_utenti:
-    df_log_utenti = pd.DataFrame(log_utenti)
-    st.dataframe(df_log_utenti)
-else:
-    st.write("Nessun log utente trovato.")

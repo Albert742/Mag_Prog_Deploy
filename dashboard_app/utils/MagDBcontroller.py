@@ -398,7 +398,7 @@ def populateSQL():
                     # If still not found, try to get the table with the uppercase name
                     table = metadata.tables.get(table_name.upper())
                 return table
-            """
+
             # Fornitori
             fornitori_table = get_table(metadata, "Fornitori")
             fornitori_data = [
@@ -740,7 +740,7 @@ def populateSQL():
             except Exception as e:
                 conn.rollback()
                 print(f"Errore durante l'inserimento delle manutenzioni veicoli: {e}")
-            """
+                
             # Dipendenti
             import MagUtils
             id1= MagUtils.create_employee_id("RSSMRA80A01H501R", "Mario", "Rossi", "Amministratore", "2020-01-01")
