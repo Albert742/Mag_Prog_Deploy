@@ -475,16 +475,16 @@ def populateSQL():
             # Lotti
             lotti_table = get_table(metadata, "Lotti")
             lotti_data = [
-                {"ID_Prodotto": 1, "ID_Fornitore": 1, "ID_Zona": 1, "ID_Scaffalatura": 1, "Lotto": "L001", "Scadenza": "2024-12-31", "QuantitàProdotto": 100, "PesoLotto": 100.0, "PrezzoAcquisto": 200.0, "ValoreLotto": 240.0, "DataRicevimento": "2023-01-01", "DataPrenotazione": "2022-12-15", "Stato": "Disponibile"},
-                {"ID_Prodotto": 2, "ID_Fornitore": 1, "ID_Zona": 1, "ID_Scaffalatura": 2, "Lotto": "L002", "Scadenza": "2024-11-30", "QuantitàProdotto": 150, "PesoLotto": 150.0, "PrezzoAcquisto": 750.0, "ValoreLotto": 900.0, "DataRicevimento": "2023-02-15", "DataPrenotazione": "2023-02-01", "Stato": "Disponibile"},
-                {"ID_Prodotto": 3, "ID_Fornitore": 2, "ID_Zona": 2, "ID_Scaffalatura": 3, "Lotto": "L003", "Scadenza": "2024-10-31", "QuantitàProdotto": 200, "PesoLotto": 4.0, "PrezzoAcquisto": 20.0, "ValoreLotto": 24.0, "DataRicevimento": "2023-03-10", "DataPrenotazione": "2023-03-01", "Stato": "Esaurito"},
-                {"ID_Prodotto": 4, "ID_Fornitore": 2, "ID_Zona": 2, "ID_Scaffalatura": 4, "Lotto": "L004", "Scadenza": "2024-09-30", "QuantitàProdotto": 180, "PesoLotto": 5.4, "PrezzoAcquisto": 9.0, "ValoreLotto": 10.8, "DataRicevimento": None, "DataPrenotazione": "2023-04-15", "Stato": "Prenotato"},
-                {"ID_Prodotto": 5, "ID_Fornitore": 3, "ID_Zona": 3, "ID_Scaffalatura": 5, "Lotto": "L005", "Scadenza": "2024-08-31", "QuantitàProdotto": 250, "PesoLotto": 125.0, "PrezzoAcquisto": 750.0, "ValoreLotto": 900.0, "DataRicevimento": "2023-05-05", "DataPrenotazione": "2023-04-25", "Stato": "Disponibile"},
-                {"ID_Prodotto": 6, "ID_Fornitore": 3, "ID_Zona": 3, "ID_Scaffalatura": 6, "Lotto": "L006", "Scadenza": "2024-07-31", "QuantitàProdotto": 220, "PesoLotto": 44.0, "PrezzoAcquisto": 440.0, "ValoreLotto": 528.0, "DataRicevimento": "2023-06-15", "DataPrenotazione": "2023-06-01", "Stato": "Esaurito"},
-                {"ID_Prodotto": 7, "ID_Fornitore": 4, "ID_Zona": 1, "ID_Scaffalatura": 1, "Lotto": "L007", "Scadenza": "2024-06-30", "QuantitàProdotto": 160, "PesoLotto": 160.0, "PrezzoAcquisto": 480.0, "ValoreLotto": 576.0, "DataRicevimento": None,"DataPrenotazione": "2023-07-05", "Stato": "Prenotato"},
-                {"ID_Prodotto": 8, "ID_Fornitore": 4, "ID_Zona": 1, "ID_Scaffalatura": 2, "Lotto": "L008", "Scadenza": "2024-05-31", "QuantitàProdotto": 140, "PesoLotto": 8.4, "PrezzoAcquisto": 168.0, "ValoreLotto": 201.6, "DataRicevimento": "2023-08-20", "DataPrenotazione": "2023-08-01", "Stato": "Disponibile"},
-                {"ID_Prodotto": 9, "ID_Fornitore": 5, "ID_Zona": 2, "ID_Scaffalatura": 3, "Lotto": "L009", "Scadenza": "2024-04-30", "QuantitàProdotto": 130, "PesoLotto": 32.5, "PrezzoAcquisto": 520.0, "ValoreLotto": 624.0, "DataRicevimento": "2023-09-25", "DataPrenotazione": "2023-09-10", "Stato": "Esaurito"},
-                {"ID_Prodotto": 10, "ID_Fornitore": 5, "ID_Zona": 2, "ID_Scaffalatura": 4, "Lotto": "L010", "Scadenza": "2024-03-31", "QuantitàProdotto": 190, "PesoLotto": 3.8, "PrezzoAcquisto": 28.5, "ValoreLotto": 34.2, "DataRicevimento": None,"DataPrenotazione": "2023-10-01", "Stato": "Prenotato"}
+                {"ID_Prodotto": 1, "ID_Fornitore": 1, "ID_Zona": 1, "ID_Scaffalatura": 1, "Lotto": "L001", "Scadenza": "2025-12-31", "QuantitàProdotto": 100, "PesoLotto": 100.0, "PrezzoAcquisto": 200.0, "ValoreLotto": 240.0, "DataRicevimento": "2024-01-01", "DataPrenotazione": "2023-12-15", "Stato": "Disponibile"},
+                {"ID_Prodotto": 2, "ID_Fornitore": 1, "ID_Zona": 1, "ID_Scaffalatura": 2, "Lotto": "L002", "Scadenza": "2025-11-30", "QuantitàProdotto": 150, "PesoLotto": 150.0, "PrezzoAcquisto": 750.0, "ValoreLotto": 900.0, "DataRicevimento": "2024-02-15", "DataPrenotazione": "2024-02-01", "Stato": "Disponibile"},
+                {"ID_Prodotto": 3, "ID_Fornitore": 2, "ID_Zona": 2, "ID_Scaffalatura": 3, "Lotto": "L003", "Scadenza": "2025-10-31", "QuantitàProdotto": 200, "PesoLotto": 4.0, "PrezzoAcquisto": 20.0, "ValoreLotto": 24.0, "DataRicevimento": "2024-03-10", "DataPrenotazione": "2024-03-01", "Stato": "Esaurito"},
+                {"ID_Prodotto": 4, "ID_Fornitore": 2, "ID_Zona": 2, "ID_Scaffalatura": 4, "Lotto": "L004", "Scadenza": "2025-09-30", "QuantitàProdotto": 180, "PesoLotto": 5.4, "PrezzoAcquisto": 9.0, "ValoreLotto": 10.8, "DataRicevimento": None, "DataPrenotazione": "2024-04-15", "Stato": "Prenotato"},
+                {"ID_Prodotto": 5, "ID_Fornitore": 3, "ID_Zona": 3, "ID_Scaffalatura": 5, "Lotto": "L005", "Scadenza": "2025-08-31", "QuantitàProdotto": 250, "PesoLotto": 125.0, "PrezzoAcquisto": 750.0, "ValoreLotto": 900.0, "DataRicevimento": "2024-05-05", "DataPrenotazione": "2024-04-25", "Stato": "Disponibile"},
+                {"ID_Prodotto": 6, "ID_Fornitore": 3, "ID_Zona": 3, "ID_Scaffalatura": 6, "Lotto": "L006", "Scadenza": "2025-07-31", "QuantitàProdotto": 220, "PesoLotto": 44.0, "PrezzoAcquisto": 440.0, "ValoreLotto": 528.0, "DataRicevimento": "2024-06-15", "DataPrenotazione": "2024-06-01", "Stato": "Esaurito"},
+                {"ID_Prodotto": 7, "ID_Fornitore": 4, "ID_Zona": 1, "ID_Scaffalatura": 1, "Lotto": "L007", "Scadenza": "2025-06-30", "QuantitàProdotto": 160, "PesoLotto": 160.0, "PrezzoAcquisto": 480.0, "ValoreLotto": 576.0, "DataRicevimento": None,"DataPrenotazione": "2024-07-05", "Stato": "Prenotato"},
+                {"ID_Prodotto": 8, "ID_Fornitore": 4, "ID_Zona": 1, "ID_Scaffalatura": 2, "Lotto": "L008", "Scadenza": "2025-05-31", "QuantitàProdotto": 140, "PesoLotto": 8.4, "PrezzoAcquisto": 168.0, "ValoreLotto": 201.6, "DataRicevimento": "2024-08-20", "DataPrenotazione": "2024-08-01", "Stato": "Disponibile"},
+                {"ID_Prodotto": 9, "ID_Fornitore": 5, "ID_Zona": 2, "ID_Scaffalatura": 3, "Lotto": "L009", "Scadenza": "2025-04-30", "QuantitàProdotto": 130, "PesoLotto": 32.5, "PrezzoAcquisto": 520.0, "ValoreLotto": 624.0, "DataRicevimento": "2024-09-25", "DataPrenotazione": "2024-09-10", "Stato": "Esaurito"},
+                {"ID_Prodotto": 10, "ID_Fornitore": 5, "ID_Zona": 2, "ID_Scaffalatura": 4, "Lotto": "L010", "Scadenza": "2025-0-31", "QuantitàProdotto": 190, "PesoLotto": 3.8, "PrezzoAcquisto": 28.5, "ValoreLotto": 34.2, "DataRicevimento": None,"DataPrenotazione": "2024-10-01", "Stato": "Prenotato"}
             ]
             try:
                 result = conn.execute(insert(lotti_table).values(lotti_data))
@@ -1068,7 +1068,9 @@ def Test_menu():
         print("5. Aggiorna record")
         print("6. Elimina record")
         print("7. Seleziona record")
-        print("8. Esci")
+        print("8. Backup del database")
+        print("9. Ripristina il database")
+        print("10. Esci")
 
         choice = input("Inserisci la tua scelta: ")
 
@@ -1175,12 +1177,26 @@ def Test_menu():
                     else:
                         print("Nessun risultato trovato.")
             elif choice == '8':
+                backup_dir = input("Inserisci la directory di backup: ")
+                backup_file = backup_database(backup_dir)
+                if backup_file:
+                    print(f"Backup creato con successo: {backup_file}")
+                else:
+                    print("Errore durante la creazione del backup.")
+            elif choice == '9':
+                backup_file = input("Inserisci il percorso del file di backup: ")
+                success, message = restore_database(backup_file)
+                if success:
+                    print("Ripristino del database avvenuto con successo.")
+                else:
+                    print(f"Errore durante il ripristino del database: {message}")
+            elif choice == '10':
                 print("Uscita dal programma. Arrivederci")
                 break
             else:
                 print("Scelta non valida.")
         except Exception as e:
             print(f"Errore imprevisto: {e}")
-            
+
 if __name__ == '__main__':
     Test_menu()
